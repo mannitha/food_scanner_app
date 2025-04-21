@@ -23,7 +23,7 @@ def get_nutrition_response(image, prompt):
 st.set_page_config(page_title="NutriMann Scanner", layout="centered")  # Centered layout for mobile
 
 # Custom CSS for mobile-friendly UI
-st.markdown("""
+st.markdown(""" 
     <style>
         .reportview-container {
             max-width: 800px;  /* Limit width for mobile */
@@ -35,29 +35,41 @@ st.markdown("""
         .css-1d391kg {
             width: 100%;
         }
+        input[type="file"] {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #f9f9f9;
+        }
     </style>
 """, unsafe_allow_html=True)
 
 st.header('🥗 NutriMann: Food Nutrition Scanner')
 
-# File uploader
-uploaded_file = st.file_uploader("Upload an image of food", type=["jpg", "jpeg", "png"])
+# File uploader (Allows mobile camera access)
+uploaded_file = st.file_uploader("📸 Upload or take a photo of your food", type=["jpg", "jpeg", "png"])
 
 # Display uploaded image
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+    st.image(image, caption="📷 Uploaded Image", use_column_width=True)
+    st.success("✅ Image uploaded successfully!")
 
 # Submit button
 submit = st.button("🔍 Get Nutrition Levels")
 
-# Nutrition extraction prompt
+# Nutrition extraction prompt (Including quantity detection)
 nutrition_prompt = """
-Analyze the uploaded image and extract detailed nutritional information for each food item detected.
+Analyze the uploaded image and extract detailed nutritional information for each food item detected, including the quantity of each item.
 Provide a structured output with the following format:
 
-Food Item | Calories (kcal) | Protein (g) | Carbs (g) | Fats (g) | Vitamins & Minerals
------------|----------------|-------------|-----------|---------|---------------------
+Food Item | Quantity | Calories (kcal) | Protein (g) | Carbs (g) | Fats (g) | Vitamins & Minerals
+-----------|----------|----------------|-------------|-----------|---------|---------------------
 """
 
 # Process when the submit button is clicked
@@ -71,7 +83,7 @@ if submit:
             data = [line.split('|') for line in lines if '|' in line and not line.startswith(('Food Item', '-----------'))]
             
             # Ensure only required columns are selected
-            expected_columns = ["Food Item", "Calories (kcal)", "Protein (g)", "Carbs (g)", "Fats (g)", "Vitamins & Minerals"]
+            expected_columns = ["Food Item", "Quantity", "Calories (kcal)", "Protein (g)", "Carbs (g)", "Fats (g)", "Vitamins & Minerals"]
             
             # Filter and clean data
             cleaned_data = []
