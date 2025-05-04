@@ -1,0 +1,32 @@
+[
+  {
+    "Name": "sushi",
+    "Meal Time": "Breakfast",
+    "Food Table": [
+      {
+        "Food Item": "Masoor Dal (Red Lentils)",
+        "Quantity": "1 cup (240ml)",
+        "Calories (kcal)": "200-250",
+        "Protein (g)": "15-20",
+        "Carbs (g)": "30-35",
+        "Fats (g)": "5-7",
+        "Vitamins & Minerals": "Good source of folate\niron\npotassium\nfiber.  Contains Vitamins B1\nB6\nand some magnesium."
+      }
+    ]
+  },
+  {
+    "Name": "sushi",
+    "Meal Time": "Breakfast",
+    "Food Table": [
+      {
+        "Food Item": "Masoor Dal (Red Lentils)",
+        "Quantity": "1 cup (240ml)",
+        "Calories (kcal)": "200-250",
+        "Protein (g)": "15-20",
+        "Carbs (g)": "30-35",
+        "Fats (g)": "5-7",
+        "Vitamins & Minerals": "Good source of folate\niron\npotassium\nfiber.  Contains Vitamins B1\nB6\nand some magnesium."
+      }
+    ]
+  }
+]

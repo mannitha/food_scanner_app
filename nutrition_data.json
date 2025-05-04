@@ -1,0 +1,47 @@
+[
+  {
+    "Name": "gigi",
+    "Age": 18,
+    "Weight (kg)": 47.0,
+    "Height (cm)": 178.32,
+    "Arm Circumference (MUAC, cm)": 15.85,
+    "BMI": 14.78,
+    "Malnutrition Status": "Normal"
+  },
+  {
+    "Name": "Prathibha",
+    "Age": 19,
+    "Weight (kg)": 48.0,
+    "Height (cm)": 178.32,
+    "Arm Circumference (MUAC, cm)": 19.13,
+    "BMI": 15.1,
+    "Malnutrition Status": "Normal"
+  },
+  {
+    "Name": "sushi",
+    "Age": 17,
+    "Weight (kg)": 30.0,
+    "Height (cm)": 178.32,
+    "Arm Circumference (MUAC, cm)": 19.13,
+    "BMI": 9.43,
+    "Malnutrition Status": "Severe Acute Malnutrition"
+  },
+  {
+    "Name": "sushit",
+    "Age": 19,
+    "Weight (kg)": 40.0,
+    "Height (cm)": 178.32,
+    "Arm Circumference (MUAC, cm)": 19.13,
+    "BMI": 12.58,
+    "Malnutrition Status": "Severe Acute Malnutrition"
+  },
+  {
+    "Name": "jj",
+    "Age": 16,
+    "Weight (kg)": 40.0,
+    "Height (cm)": 178.32,
+    "Arm Circumference (MUAC, cm)": 15.85,
+    "BMI": 12.58,
+    "Malnutrition Status": "Severe Acute Malnutrition"
+  }
+]
