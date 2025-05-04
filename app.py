@@ -1,6 +1,47 @@
 import streamlit as st
 st.set_page_config(page_title="Malnutrition App", layout="wide")
 
+# ✅ Mobile-Friendly Styling
+st.markdown("""
+    <style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    .main .block-container {
+        padding-top: 1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-bottom: 1rem;
+        max-width: 100%;
+    }
+
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+
+    button[kind="primary"], .stButton > button {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+
+    .stTextInput > div > input, .stNumberInput input {
+        font-size: 16px;
+        padding: 0.75rem;
+    }
+
+    .stSelectbox > div {
+        font-size: 16px;
+    }
+
+    .stDataFrame, .stTable {
+        overflow-x: auto;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+        margin-top: 0.5rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 import json
 import os
 import pandas as pd
@@ -9,7 +50,7 @@ from food_module import run_food_scanner
 from arm_module import run_muac
 from height_module import run_height_estimator
 
-# Inject meta tags for mobile web app behavior and icon
+# Meta and icon injection
 components.html("""
     <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/mannitha/food_scanner_app/main/favicon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
