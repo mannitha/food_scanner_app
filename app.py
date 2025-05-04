@@ -9,7 +9,7 @@ from food_module import run_food_scanner
 from arm_module import run_muac
 from height_module import run_height_estimator
 
-# --- Meta Tags and Icon ---
+# Inject meta tags for mobile web app behavior and icon
 components.html("""
     <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/mannitha/food_scanner_app/main/favicon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,7 +17,6 @@ components.html("""
     <meta name="apple-mobile-web-app-title" content="My App">
 """, height=0)
 
-# --- File Helpers ---
 USER_DATA_FILE = "users.json"
 
 def get_nutrition_file():
@@ -33,9 +32,9 @@ def save_users(users):
     json.dump(users, open(USER_DATA_FILE, "w"))
 
 def load_nutrition_data():
+    file = get_nutrition_file()
     try:
-        path = get_nutrition_file()
-        data = json.load(open(path)) if os.path.exists(path) else []
+        data = json.load(open(file)) if os.path.exists(file) else []
         return data if isinstance(data, list) else []
     except:
         return []
@@ -44,13 +43,12 @@ def save_nutrition_data(data):
     json.dump(data, open(get_nutrition_file(), "w"), indent=2)
 
 def load_food_data():
-    path = get_food_file()
-    return json.load(open(path)) if os.path.exists(path) else []
+    file = get_food_file()
+    return json.load(open(file)) if os.path.exists(file) else []
 
 def save_food_data(data):
     json.dump(data, open(get_food_file(), "w"), indent=2)
 
-# --- Auth ---
 def signup():
     st.title("🔐 Sign Up")
     u = st.text_input("Username")
@@ -83,7 +81,6 @@ def login():
 def logout():
     st.session_state.clear()
 
-# --- Back Button ---
 def back_button():
     if st.button("⬅️ Back"):
         nav = {
@@ -104,7 +101,6 @@ def back_button():
         st.session_state.page = nav.get(st.session_state.page, "select_flow")
         st.rerun()
 
-# --- BMI & Status ---
 def calculate_bmi(w, h):
     return round(w / ((h / 100) ** 2), 2) if w and h else None
 
@@ -117,7 +113,6 @@ def calculate_malnutrition_status(bmi, arm):
         return "Moderate Acute Malnutrition"
     return "Normal"
 
-# --- Nutrition Flow ---
 def select_flow_step():
     st.title("📋 Choose Flow")
     col1, col2 = st.columns(2)
@@ -179,6 +174,7 @@ def done_step():
     }
     entry["BMI"] = calculate_bmi(entry["Weight (kg)"], entry["Height (cm)"])
     entry["Malnutrition Status"] = calculate_malnutrition_status(entry["BMI"], entry["Arm Circumference (MUAC, cm)"])
+
     data = load_nutrition_data()
     if any(d["Name"] == entry["Name"] and d["Age"] == entry["Age"] for d in data):
         st.warning("Duplicate detected.")
@@ -186,7 +182,9 @@ def done_step():
         data.append(entry)
         save_nutrition_data(data)
         st.success("Saved!")
+
     st.table(pd.DataFrame([entry]))
+
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🔒 Logout"):
@@ -199,7 +197,10 @@ def view_old_data_step():
     st.title("📄 Previous Entries")
     back_button()
     df = pd.DataFrame(load_nutrition_data())
-    st.dataframe(df if not df.empty else "No records.")
+    if df.empty:
+        st.info("No records.")
+    else:
+        st.dataframe(df)
 
 def modify_old_data_step():
     st.title("✏️ Modify Entry")
@@ -234,7 +235,6 @@ def modify_old_data_step():
             st.success("Deleted!")
             st.rerun()
 
-# --- NutriMann Flow ---
 def nutrimann_choices_step():
     st.title("🍴 NutriMann")
     back_button()
@@ -322,7 +322,6 @@ def edit_food_entry_step():
         st.success("Updated!")
         st.session_state.page = "view_old_food"
 
-# --- Main ---
 def main():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
