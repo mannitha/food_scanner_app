@@ -7,7 +7,7 @@ from food_module import run_food_scanner
 from arm_module import run_muac
 from height_module import run_height_estimator
 
-# Meta and icon for mobile
+# Meta and icon for mobile (PWA-like behavior)
 components.html("""
     <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/mannitha/food_scanner_app/main/favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -41,7 +41,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# File functions
+# File paths and data functions
 USER_DATA_FILE = "users.json"
 def get_nutrition_file(): return f"nutrition_data_{st.session_state.username}.json"
 def get_food_file(): return f"food_data_{st.session_state.username}.json"
@@ -64,7 +64,6 @@ def calculate_malnutrition_status(bmi, arm):
         return "Moderate Acute Malnutrition"
     return "Normal"
 
-# Navigation
 def back_button():
     if st.button("⬅️ Back"):
         nav = {
@@ -85,8 +84,10 @@ def login():
     p = st.text_input("Password", type="password")
     if st.button("Login"):
         users = load_users()
-        if u not in users: st.error("Username doesn't exist.")
-        elif users[u]["password"] != p: st.error("Incorrect password.")
+        if u not in users:
+            st.error("Username doesn't exist.")
+        elif users[u]["password"] != p:
+            st.error("Incorrect password.")
         else:
             st.session_state.logged_in = True
             st.session_state.username = u
@@ -126,10 +127,13 @@ def nutrition_choices_step():
 def child_info_step():
     st.title("📋 Child Information")
     back_button()
-    st.session_state.child_name = st.text_input("Child's Name")
-    st.session_state.child_age = st.number_input("Age", min_value=0)
-    st.session_state.child_weight = st.number_input("Weight (kg)", min_value=0.0)
-    if st.button("Continue"):
+    name = st.text_input("Child's Name")
+    age = st.number_input("Age", min_value=0)
+    weight = st.number_input("Weight (kg)", min_value=0.0)
+    if st.button("Continue") and name and age and weight:
+        st.session_state.child_name = name
+        st.session_state.child_age = age
+        st.session_state.child_weight = weight
         st.session_state.page = "height"
 
 def height_step():
@@ -183,7 +187,8 @@ def modify_old_data_step():
     st.title("✏️ Modify Entry")
     back_button()
     data = load_nutrition_data()
-    if not data: return st.info("No data available")
+    if not data:
+        return st.info("No data available")
     df = pd.DataFrame(data)
     idx = st.selectbox("Select Entry", range(len(df)), format_func=lambda i: f"{df.iloc[i]['Name']} (Age {df.iloc[i]['Age']})")
     r = df.iloc[idx]
@@ -218,9 +223,11 @@ def nutrimann_choices_step():
 def nutrimann_info_step():
     st.title("🍛 Enter Meal Details")
     back_button()
-    st.session_state.food_name = st.text_input("Name")
-    st.session_state.food_time = st.selectbox("Meal Time", ["Breakfast", "Lunch", "Dinner", "Snack", "Other"])
-    if st.button("Continue"):
+    name = st.text_input("Name")
+    time = st.selectbox("Meal Time", ["Breakfast", "Lunch", "Dinner", "Snack", "Other"])
+    if st.button("Continue") and name:
+        st.session_state.food_name = name
+        st.session_state.food_time = time
         st.session_state.page = "food_only"
 
 def food_only_step():
@@ -255,7 +262,8 @@ def view_old_food_step():
     st.title("📂 Old Food Scans")
     back_button()
     data = load_food_data()
-    if not data: return st.info("No records")
+    if not data:
+        return st.info("No records")
     idx = st.selectbox("Select", range(len(data)), format_func=lambda i: f"{data[i]['Name']} - {data[i]['Meal Timing']}")
     entry = data[idx]
     st.table(pd.DataFrame(entry["Nutrition Table"]))
@@ -271,6 +279,9 @@ def view_old_food_step():
 def edit_food_entry_step():
     st.title("📝 Edit Food Entry")
     back_button()
+    if "edit_index" not in st.session_state:
+        st.warning("No entry selected.")
+        return
     idx = st.session_state.edit_index
     data = load_food_data()
     entry = data[idx]
@@ -285,6 +296,7 @@ def edit_food_entry_step():
         st.success("Updated!")
         st.session_state.page = "view_old_food"
 
+# Entry point
 def main():
     if "logged_in" not in st.session_state: st.session_state.logged_in = False
     if "page" not in st.session_state: st.session_state.page = "login"
