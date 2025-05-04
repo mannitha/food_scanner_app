@@ -9,16 +9,15 @@ from arm_module import run_muac
 from height_module import run_height_estimator
 from streamlit.components.v1 import html
 
-# -------- Add iPhone PWA Support --------
-def add_pwa_meta():
-    html("""
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#4CAF50"/>
-    <link rel="apple-touch-icon" href="/static/icon.png">
-    <link rel="icon" href="/static/icon.png">
-    """, height=0)
+import streamlit.components.v1 as components
 
-add_pwa_meta()
+# Inject custom meta for home screen icon
+components.html("""
+    <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/mannitha/repo-name/main/app_icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="My App">
+""", height=0)
 
 # -------- File Names --------
 USER_DATA_FILE = "users.json"
