@@ -4,12 +4,12 @@ st.set_page_config(page_title="Malnutrition App", layout="wide")
 import json
 import os
 import pandas as pd
-import streamlit.components.v1 as components  # Correct import
+import streamlit.components.v1 as components
 from food_module import run_food_scanner
 from arm_module import run_muac
 from height_module import run_height_estimator
 
-# Inject meta tags for mobile web app behavior and icon
+# --- Meta Tags and Icon ---
 components.html("""
     <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/mannitha/food_scanner_app/main/favicon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,12 +17,15 @@ components.html("""
     <meta name="apple-mobile-web-app-title" content="My App">
 """, height=0)
 
-# --- File Names ---
+# --- File Helpers ---
 USER_DATA_FILE = "users.json"
-NUTRITION_DATA_FILE = "nutrition_data.json"
-FOOD_DATA_FILE = "food_data.json"
 
-# --- Helpers ---
+def get_nutrition_file():
+    return f"nutrition_data_{st.session_state.username}.json"
+
+def get_food_file():
+    return f"food_data_{st.session_state.username}.json"
+
 def load_users():
     return json.load(open(USER_DATA_FILE)) if os.path.exists(USER_DATA_FILE) else {}
 
@@ -31,19 +34,21 @@ def save_users(users):
 
 def load_nutrition_data():
     try:
-        data = json.load(open(NUTRITION_DATA_FILE)) if os.path.exists(NUTRITION_DATA_FILE) else []
+        path = get_nutrition_file()
+        data = json.load(open(path)) if os.path.exists(path) else []
         return data if isinstance(data, list) else []
     except:
         return []
 
 def save_nutrition_data(data):
-    json.dump(data, open(NUTRITION_DATA_FILE, "w"), indent=2)
+    json.dump(data, open(get_nutrition_file(), "w"), indent=2)
 
 def load_food_data():
-    return json.load(open(FOOD_DATA_FILE)) if os.path.exists(FOOD_DATA_FILE) else []
+    path = get_food_file()
+    return json.load(open(path)) if os.path.exists(path) else []
 
 def save_food_data(data):
-    json.dump(data, open(FOOD_DATA_FILE, "w"), indent=2)
+    json.dump(data, open(get_food_file(), "w"), indent=2)
 
 # --- Auth ---
 def signup():
@@ -78,7 +83,7 @@ def login():
 def logout():
     st.session_state.clear()
 
-# --- Back Button Logic ---
+# --- Back Button ---
 def back_button():
     if st.button("⬅️ Back"):
         nav = {
@@ -99,7 +104,7 @@ def back_button():
         st.session_state.page = nav.get(st.session_state.page, "select_flow")
         st.rerun()
 
-# --- BMI & Malnutrition Status ---
+# --- BMI & Status ---
 def calculate_bmi(w, h):
     return round(w / ((h / 100) ** 2), 2) if w and h else None
 
@@ -112,7 +117,7 @@ def calculate_malnutrition_status(bmi, arm):
         return "Moderate Acute Malnutrition"
     return "Normal"
 
-# --- Nutrition Flow Steps ---
+# --- Nutrition Flow ---
 def select_flow_step():
     st.title("📋 Choose Flow")
     col1, col2 = st.columns(2)
@@ -174,7 +179,6 @@ def done_step():
     }
     entry["BMI"] = calculate_bmi(entry["Weight (kg)"], entry["Height (cm)"])
     entry["Malnutrition Status"] = calculate_malnutrition_status(entry["BMI"], entry["Arm Circumference (MUAC, cm)"])
-
     data = load_nutrition_data()
     if any(d["Name"] == entry["Name"] and d["Age"] == entry["Age"] for d in data):
         st.warning("Duplicate detected.")
@@ -182,9 +186,7 @@ def done_step():
         data.append(entry)
         save_nutrition_data(data)
         st.success("Saved!")
-
     st.table(pd.DataFrame([entry]))
-
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🔒 Logout"):
