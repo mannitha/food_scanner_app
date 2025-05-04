@@ -13,7 +13,7 @@ import streamlit.components.v1 as components
 
 # Inject custom meta for home screen icon
 components.html("""
-    <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/mannitha/repo-name/main/app_icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/mannitha/food_scanner_app/main/favicon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="My App">
