@@ -6,6 +6,16 @@ import numpy as np
 from food_module import run_food_scanner
 from arm_module import run_muac
 from height_module import run_height_estimator
+from streamlit.components.v1 import html
+
+def add_pwa_meta():
+    html("""
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4CAF50"/>
+    <link rel="apple-touch-icon" href="/static/icon.png">
+    """, height=0)
+
+add_pwa_meta()
 
 USER_DATA_FILE = "users.json"
 NUTRITION_DATA_FILE = "nutrition_data.json"
