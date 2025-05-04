@@ -5,3 +5,4 @@ requests
 pandas
 opencv-python
 numpy
+mediapipe
