@@ -1,22 +1,26 @@
-import streamlit as st 
+import streamlit as st
+st.set_page_config(page_title="Malnutrition App", layout="wide")  # MUST be at the top
+
 import json
 import os
 import pandas as pd
-import numpy as np
 from food_module import run_food_scanner
 from arm_module import run_muac
 from height_module import run_height_estimator
 from streamlit.components.v1 import html
 
+# -------- Add iPhone PWA Support --------
 def add_pwa_meta():
     html("""
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4CAF50"/>
     <link rel="apple-touch-icon" href="/static/icon.png">
+    <link rel="icon" href="/static/icon.png">
     """, height=0)
 
 add_pwa_meta()
 
+# -------- File Names --------
 USER_DATA_FILE = "users.json"
 NUTRITION_DATA_FILE = "nutrition_data.json"
 FOOD_DATA_FILE = "food_data.json"
@@ -49,10 +53,13 @@ def save_food_data(data):
 # -------- Auth --------
 def signup():
     st.title("Sign Up")
-    u, p, e = st.text_input("Username"), st.text_input("Password", type="password"), st.text_input("Email")
+    u = st.text_input("Username")
+    p = st.text_input("Password", type="password")
+    e = st.text_input("Email")
     if st.button("Create Account"):
         users = load_users()
-        if u in users: st.error("Username already exists.")
+        if u in users:
+            st.error("Username already exists.")
         else:
             users[u] = {"password": p, "email": e}
             save_users(users)
@@ -60,11 +67,14 @@ def signup():
 
 def login():
     st.title("Login")
-    u, p = st.text_input("Username"), st.text_input("Password", type="password")
+    u = st.text_input("Username")
+    p = st.text_input("Password", type="password")
     if st.button("Login"):
         users = load_users()
-        if u not in users: st.error("Username doesn't exist.")
-        elif users[u]["password"] != p: st.error("Incorrect password.")
+        if u not in users:
+            st.error("Username doesn't exist.")
+        elif users[u]["password"] != p:
+            st.error("Incorrect password.")
         else:
             st.session_state.logged_in = True
             st.session_state.username = u
@@ -188,7 +198,9 @@ def modify_old_data_step():
     st.title("Modify Entry")
     back_button()
     data = load_nutrition_data()
-    if not data: st.info("No data"); return
+    if not data:
+        st.info("No data")
+        return
     df = pd.DataFrame(data)
     idx = st.selectbox("Select", range(len(df)), format_func=lambda i: f"{df.iloc[i]['Name']} (Age {df.iloc[i]['Age']})")
     r = df.iloc[idx]
@@ -270,7 +282,8 @@ def view_old_food_step():
     back_button()
     data = load_food_data()
     if not data:
-        st.info("No records"); return
+        st.info("No records")
+        return
     idx = st.selectbox("Select Entry", range(len(data)), format_func=lambda i: f"{data[i]['Name']} - {data[i]['Meal Timing']}")
     entry = data[idx]
     st.table(pd.DataFrame(entry["Nutrition Table"]))
@@ -293,7 +306,8 @@ def edit_food_entry_step():
     data = load_food_data()
     entry = data[idx]
     name = st.text_input("Name", entry["Name"])
-    time = st.selectbox("Meal Timing", ["Breakfast", "Lunch", "Dinner", "Snack", "Other"], index=["Breakfast", "Lunch", "Dinner", "Snack", "Other"].index(entry["Meal Timing"]))
+    time = st.selectbox("Meal Timing", ["Breakfast", "Lunch", "Dinner", "Snack", "Other"],
+                        index=["Breakfast", "Lunch", "Dinner", "Snack", "Other"].index(entry["Meal Timing"]))
     df = pd.DataFrame(entry["Nutrition Table"])
     st.table(df)
     if st.button("Save Changes"):
@@ -305,7 +319,6 @@ def edit_food_entry_step():
 
 # -------- Main --------
 def main():
-    st.set_page_config("Malnutrition App", layout="wide")
     if "logged_in" not in st.session_state: st.session_state.logged_in = False
     if "page" not in st.session_state: st.session_state.page = "login"
 
