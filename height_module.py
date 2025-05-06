@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 import mediapipe as mp
 
-# Hardcoded calibration factor (in cm/pixel)
+# Calibration factor in cm/pixel (adjust as needed based on test photos)
 CALIBRATION_FACTOR = 0.2031
 
 mp_pose = mp.solutions.pose
@@ -14,27 +14,18 @@ def load_image(uploaded_file):
     return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
 def detect_keypoints(image):
-    """Detect top of head (NOSE) and estimate floor level using image content."""
+    """Detect head (nose) and toe keypoints for accurate height estimation."""
     with mp_pose.Pose(static_image_mode=True) as pose:
         results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         if results.pose_landmarks:
             h, w, _ = image.shape
             landmarks = results.pose_landmarks.landmark
             head_y = int(landmarks[mp_pose.PoseLandmark.NOSE].y * h)
-
-            # Estimate floor line using edge detection on the lower part of the image
-            lower_part = image[int(h * 0.5):, :]
-            gray = cv2.cvtColor(lower_part, cv2.COLOR_BGR2GRAY)
-            blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-            edges = cv2.Canny(blurred, 50, 150)
-
-            # Find horizontal lines (floor candidates)
-            lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=100, minLineLength=50, maxLineGap=20)
-            if lines is not None:
-                floor_y_local = max(line[0][1] for line in lines)
-                foot_y = int(h * 0.5) + floor_y_local
-            else:
-                foot_y = h  # fallback to image bottom
+            
+            # Get toe y-coordinates
+            left_toe_y = int(landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX].y * h)
+            right_toe_y = int(landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX].y * h)
+            foot_y = max(left_toe_y, right_toe_y)
 
             return head_y, foot_y
     return None, None
@@ -42,13 +33,13 @@ def detect_keypoints(image):
 def draw_landmarks(image, head_y, foot_y):
     annotated = image.copy()
     center_x = image.shape[1] // 2
-    cv2.line(annotated, (center_x, head_y), (center_x, foot_y), (0,255,0), 2)
-    cv2.circle(annotated, (center_x, head_y), 5, (255,0,0), -1)
-    cv2.circle(annotated, (center_x, foot_y), 5, (0,0,255), -1)
+    cv2.line(annotated, (center_x, head_y), (center_x, foot_y), (0, 255, 0), 2)
+    cv2.circle(annotated, (center_x, head_y), 5, (255, 0, 0), -1)
+    cv2.circle(annotated, (center_x, foot_y), 5, (0, 0, 255), -1)
     return annotated
 
 def run_height_estimator():
-    """Height estimation wrapped in a function."""
+    """Height estimation tool using NOSE to TOES."""
     st.title("Height Measurement")
 
     col1, col2 = st.columns([1, 1])
@@ -84,7 +75,7 @@ def run_height_estimator():
         if head_y is not None and foot_y is not None:
             pixel_height = abs(foot_y - head_y)
             annotated_image = draw_landmarks(image, head_y, foot_y)
-            st.image(annotated_image, caption="Detected head and floor", use_column_width=True)
+            st.image(annotated_image, caption="Detected head and toe keypoints", use_column_width=True)
 
             estimated_height = CALIBRATION_FACTOR * pixel_height
             st.success(f"Estimated Height: *{estimated_height:.2f} cm*")
