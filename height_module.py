@@ -11,6 +11,23 @@ mp_pose = mp.solutions.pose
 
 def load_image(uploaded_file):
     img = Image.open(uploaded_file)
+
+    # Handle EXIF orientation (common with phone images)
+    try:
+        exif = img._getexif()
+        if exif:
+            orientation = exif.get(0x112, 1)
+            rotate_values = {
+                3: 180,
+                6: 270,
+                8: 90
+            }
+            if orientation in rotate_values:
+                img = img.rotate(rotate_values[orientation], expand=True)
+    except (AttributeError, KeyError, IndexError):
+        # If image has no EXIF or orientation info
+        pass
+
     return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
 def detect_keypoints(image):
@@ -29,9 +46,9 @@ def detect_keypoints(image):
 def draw_landmarks(image, head_y, foot_y):
     annotated = image.copy()
     center_x = image.shape[1] // 2
-    cv2.line(annotated, (center_x, head_y), (center_x, foot_y), (0,255,0), 2)
-    cv2.circle(annotated, (center_x, head_y), 5, (255,0,0), -1)
-    cv2.circle(annotated, (center_x, foot_y), 5, (0,0,255), -1)
+    cv2.line(annotated, (center_x, head_y), (center_x, foot_y), (0, 255, 0), 2)
+    cv2.circle(annotated, (center_x, head_y), 5, (255, 0, 0), -1)
+    cv2.circle(annotated, (center_x, foot_y), 5, (0, 0, 255), -1)
     return annotated
 
 def run_height_estimator():
@@ -81,3 +98,6 @@ def run_height_estimator():
             return None
 
     return None
+
+# Run the height estimator
+run_height_estimator()
