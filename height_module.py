@@ -14,15 +14,28 @@ def load_image(uploaded_file):
     return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
 def detect_keypoints(image):
+    """Detect top of head (NOSE) and estimate floor level using image content."""
     with mp_pose.Pose(static_image_mode=True) as pose:
         results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         if results.pose_landmarks:
             h, w, _ = image.shape
             landmarks = results.pose_landmarks.landmark
             head_y = int(landmarks[mp_pose.PoseLandmark.NOSE].y * h)
-            foot_left_y = int(landmarks[mp_pose.PoseLandmark.LEFT_ANKLE].y * h)
-            foot_right_y = int(landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE].y * h)
-            foot_y = max(foot_left_y, foot_right_y)
+
+            # Estimate floor line using edge detection on the lower part of the image
+            lower_part = image[int(h * 0.5):, :]
+            gray = cv2.cvtColor(lower_part, cv2.COLOR_BGR2GRAY)
+            blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+            edges = cv2.Canny(blurred, 50, 150)
+
+            # Find horizontal lines (floor candidates)
+            lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=100, minLineLength=50, maxLineGap=20)
+            if lines is not None:
+                floor_y_local = max(line[0][1] for line in lines)
+                foot_y = int(h * 0.5) + floor_y_local
+            else:
+                foot_y = h  # fallback to image bottom
+
             return head_y, foot_y
     return None, None
 
@@ -71,7 +84,7 @@ def run_height_estimator():
         if head_y is not None and foot_y is not None:
             pixel_height = abs(foot_y - head_y)
             annotated_image = draw_landmarks(image, head_y, foot_y)
-            st.image(annotated_image, caption="Detected head and foot", use_column_width=True)
+            st.image(annotated_image, caption="Detected head and floor", use_column_width=True)
 
             estimated_height = CALIBRATION_FACTOR * pixel_height
             st.success(f"Estimated Height: *{estimated_height:.2f} cm*")
