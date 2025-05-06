@@ -202,11 +202,13 @@ def view_old_data_step():
 def modify_old_data_step():
     st.title("✏️ Modify Old Data")
 
-    if "child_data" not in st.session_state or not st.session_state["child_data"]:
-        st.warning("No previous data found.")
-        return
+  data = load_nutrition_data()
+if not data:
+    st.warning("No previous data found.")
+    return
 
-    df = pd.DataFrame(st.session_state["child_data"])
+df = pd.DataFrame(data)
+
 
     if df.empty or "Name" not in df.columns:
         st.warning("No valid records to modify.")
@@ -243,13 +245,13 @@ def modify_old_data_step():
             for key, value in updated_data.items():
                 df.at[selected_idx, key] = value
 
-            st.session_state["child_data"] = df.to_dict(orient="records")
+           save_nutrition_data(df.to_dict(orient="records"))
             st.success("Record updated successfully.")
 
     with col2:
         if st.button("🗑️ Delete Record"):
             df = df.drop(index=selected_idx).reset_index(drop=True)
-            st.session_state["child_data"] = df.to_dict(orient="records")
+         save_nutrition_data(df.to_dict(orient="records"))
             st.success("Record deleted successfully.")
 
 
