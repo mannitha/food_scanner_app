@@ -1,4 +1,3 @@
-# ✅ Full Streamlit App Code with Nutrition & Food Scanner Modules
 import streamlit as st
 st.set_page_config(page_title="Malnutrition App", layout="wide")
 
@@ -111,7 +110,6 @@ def back_button():
             "food_only": "nutrimann_info",
             "food_summary": "food_only",
             "view_old_data": "nutrition_choices",
-            "modify_old_data": "nutrition_choices",
             "view_old_food": "nutrimann_choices",
             "edit_food_entry": "view_old_food"
         }
@@ -137,13 +135,11 @@ def select_flow_step():
 def nutrition_choices_step():
     st.title("🧒 Nutrition Menu")
     back_button()
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1: 
         if st.button("➕ New Entry"): st.session_state.page = "child_info"
     with col2: 
         if st.button("📄 View Previous Data"): st.session_state.page = "view_old_data"
-    with col3: 
-        if st.button("✏️ Modify Old Data"): st.session_state.page = "modify_old_data"
 
 def child_info_step():
     st.title("📋 Child Information")
@@ -195,66 +191,24 @@ def done_step():
 def view_old_data_step():
     st.title("📄 Previous Entries")
     back_button()
-    df = pd.DataFrame(load_nutrition_data())
-    if df.empty: st.info("No records.")
-    else: st.dataframe(df)
-
-def modify_old_data_step():
-    st.title("✏️ Modify Old Data")
-
-  data = load_nutrition_data()
-if not data:
-    st.warning("No previous data found.")
-    return
-
-df = pd.DataFrame(data)
-
-
-    if df.empty or "Name" not in df.columns:
-        st.warning("No valid records to modify.")
+    data = load_nutrition_data()
+    if not data:
+        st.info("No records.")
         return
 
-    # Create display list with index to avoid duplicates
-    display_names = [f"{i + 1}. {row['Name']}" for i, row in df.iterrows()]
-    selected_display = st.selectbox("Select a child to modify or delete:", display_names)
+    df = pd.DataFrame(data)
+    if df.empty:
+        st.info("No records.")
+        return
 
-    selected_idx = display_names.index(selected_display)
-    selected_row = df.loc[selected_idx]
-
-    # Pre-fill form values
-    name = st.text_input("Name", value=selected_row["Name"])
-    age = st.number_input("Age (years)", min_value=0, max_value=18, value=int(selected_row["Age"]))
-    height = st.number_input("Height (cm)", min_value=0.0, max_value=200.0, value=float(selected_row["Height"]))
-    arm = st.number_input("Arm Circumference (cm)", min_value=0.0, max_value=50.0, value=float(selected_row["Arm"]))
-    food = st.text_input("Food Taken (Optional)", value=selected_row.get("Food", ""))
-    status = st.selectbox("Malnutrition Status", ["Normal", "Moderate", "Severe"],
-                          index=["Normal", "Moderate", "Severe"].index(selected_row["Status"]))
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if st.button("✅ Update Record"):
-            updated_data = {
-                "Name": name,
-                "Age": age,
-                "Height": height,
-                "Arm": arm,
-                "Food": food,
-                "Status": status
-            }
-            for key, value in updated_data.items():
-                df.at[selected_idx, key] = value
-
-           save_nutrition_data(df.to_dict(orient="records"))
-            st.success("Record updated successfully.")
-
-    with col2:
-        if st.button("🗑️ Delete Record"):
-            df = df.drop(index=selected_idx).reset_index(drop=True)
-         save_nutrition_data(df.to_dict(orient="records"))
-            st.success("Record deleted successfully.")
-
-
+    for i, row in df.iterrows():
+        with st.expander(f"{row['Name']} - Age {row['Age']}"):
+            st.write(row)
+            if st.button(f"🗑️ Delete {row['Name']} (Age {row['Age']})", key=f"del_{i}"):
+                df = df.drop(index=i).reset_index(drop=True)
+                save_nutrition_data(df.to_dict(orient="records"))
+                st.success(f"Deleted entry for {row['Name']}")
+                st.rerun()
 
 def nutrimann_choices_step():
     st.title("🍴 NutriMann")
@@ -347,7 +301,6 @@ def main():
             case "select_flow": select_flow_step()
             case "nutrition_choices": nutrition_choices_step()
             case "view_old_data": view_old_data_step()
-            case "modify_old_data": modify_old_data_step()
             case "child_info": child_info_step()
             case "height": height_step()
             case "arm": arm_step()
