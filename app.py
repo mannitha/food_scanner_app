@@ -207,49 +207,51 @@ def modify_old_data_step():
         return
 
     df = pd.DataFrame(st.session_state["child_data"])
-    
-    if df.empty:
-        st.warning("No records available to modify.")
+
+    if df.empty or "Name" not in df.columns:
+        st.warning("No valid records to modify.")
         return
 
-    selected_name = st.selectbox("Select a child to modify:", df["Name"])
+    # Create display list with index to avoid duplicates
+    display_names = [f"{i + 1}. {row['Name']}" for i, row in df.iterrows()]
+    selected_display = st.selectbox("Select a child to modify or delete:", display_names)
 
-    selected_idx = df[df["Name"] == selected_name].index
+    selected_idx = display_names.index(selected_display)
+    selected_row = df.loc[selected_idx]
 
-    if selected_idx.empty:
-        st.error("Selected name not found.")
-        return
+    # Pre-fill form values
+    name = st.text_input("Name", value=selected_row["Name"])
+    age = st.number_input("Age (years)", min_value=0, max_value=18, value=int(selected_row["Age"]))
+    height = st.number_input("Height (cm)", min_value=0.0, max_value=200.0, value=float(selected_row["Height"]))
+    arm = st.number_input("Arm Circumference (cm)", min_value=0.0, max_value=50.0, value=float(selected_row["Arm"]))
+    food = st.text_input("Food Taken (Optional)", value=selected_row.get("Food", ""))
+    status = st.selectbox("Malnutrition Status", ["Normal", "Moderate", "Severe"],
+                          index=["Normal", "Moderate", "Severe"].index(selected_row["Status"]))
 
-    idx = selected_idx[0]  # Get the index of the selected row
+    col1, col2 = st.columns(2)
 
-    # Pre-fill values
-    name = st.text_input("Name", value=df.at[idx, "Name"])
-    age = st.number_input("Age (years)", min_value=0, max_value=18, value=int(df.at[idx, "Age"]))
-    height = st.number_input("Height (cm)", min_value=0.0, max_value=200.0, value=float(df.at[idx, "Height"]))
-    arm = st.number_input("Arm Circumference (cm)", min_value=0.0, max_value=50.0, value=float(df.at[idx, "Arm"]))
-    food = st.text_input("Food Taken (Optional)", value=df.at[idx, "Food"])
-    status = st.selectbox("Malnutrition Status", ["Normal", "Moderate", "Severe"], index=["Normal", "Moderate", "Severe"].index(df.at[idx, "Status"]))
-
-    if st.button("Update Record"):
-        updated_data = {
-            "Name": name,
-            "Age": age,
-            "Height": height,
-            "Arm": arm,
-            "Food": food,
-            "Status": status
-        }
-
-        # Safely update only if the index exists
-        if idx in df.index:
+    with col1:
+        if st.button("✅ Update Record"):
+            updated_data = {
+                "Name": name,
+                "Age": age,
+                "Height": height,
+                "Arm": arm,
+                "Food": food,
+                "Status": status
+            }
             for key, value in updated_data.items():
-                df.at[idx, key] = value
+                df.at[selected_idx, key] = value
 
-            # Save back to session state
             st.session_state["child_data"] = df.to_dict(orient="records")
             st.success("Record updated successfully.")
-        else:
-            st.error("Failed to update: index not found.")
+
+    with col2:
+        if st.button("🗑️ Delete Record"):
+            df = df.drop(index=selected_idx).reset_index(drop=True)
+            st.session_state["child_data"] = df.to_dict(orient="records")
+            st.success("Record deleted successfully.")
+
 
 
 def nutrimann_choices_step():
