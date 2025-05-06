@@ -7,7 +7,7 @@ import mediapipe as mp
 mp_pose = mp.solutions.pose
 
 # Constants
-AVERAGE_SHOULDER_WIDTH_CM = 27  # average for child/female, adjust as needed
+AVERAGE_SHOULDER_WIDTH_CM = 25  # average for child/female, adjust as needed
 
 def load_image(uploaded_file):
     img = Image.open(uploaded_file)
