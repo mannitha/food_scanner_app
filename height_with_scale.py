@@ -1,38 +1,63 @@
 # height_with_scale.py
-
-import cv2
+import streamlit as st
+from PIL import Image
+import math
 import numpy as np
-import mediapipe as mp
+from streamlit_drawable_canvas import st_canvas
 
-SCALE_LENGTH_CM = 32
-mp_pose = mp.solutions.pose
+def estimate_height():
+    st.subheader("📏 Upload Image with Scale")
+    uploaded_file = st.file_uploader("Upload image", type=["jpg", "jpeg", "png"])
+    
+    if not uploaded_file:
+        return None
 
-def estimate_height_with_manual_scale(image, scale_pts):
-    orig = image.copy()
-    h_img, w_img, _ = image.shape
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    pt1, pt2 = scale_pts
-    scale_pixel_length = np.linalg.norm(np.array(pt1) - np.array(pt2))
-    pixels_per_cm = scale_pixel_length / SCALE_LENGTH_CM
+    st.write("Mark two points on the scale and two points on the child (top of head to bottom of feet)")
 
-    with mp_pose.Pose(static_image_mode=True) as pose:
-        results = pose.process(cv2.cvtColor(orig, cv2.COLOR_BGR2RGB))
-        if not results.pose_landmarks:
-            return None, None, "❌ Body landmarks not detected."
+    canvas_result = st_canvas(
+        fill_color="rgba(255, 255, 255, 0)",  # Transparent fill
+        stroke_width=3,
+        stroke_color="#000",
+        background_image=image,
+        update_streamlit=True,
+        height=image.height,
+        width=image.width,
+        drawing_mode="point",
+        key="height_canvas"
+    )
 
-        landmarks = results.pose_landmarks.landmark
-        head_y = int(landmarks[mp_pose.PoseLandmark.NOSE].y * h_img)
-        foot_l = int(landmarks[mp_pose.PoseLandmark.LEFT_ANKLE].y * h_img)
-        foot_r = int(landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE].y * h_img)
-        foot_y = max(foot_l, foot_r)
+    if not canvas_result.json_data:
+        return None
 
-        pixel_height = foot_y - head_y
-        height_cm = pixel_height / pixels_per_cm
+    points = canvas_result.json_data["objects"]
+    if len(points) < 4:
+        st.warning("Please mark at least 4 points (2 for scale, 2 for child).")
+        return None
 
-        center_x = w_img // 2
-        cv2.line(image, (center_x, head_y), (center_x, foot_y), (255, 255, 0), 2)
-        cv2.circle(image, (center_x, head_y), 5, (255, 0, 0), -1)
-        cv2.circle(image, (center_x, foot_y), 5, (0, 0, 255), -1)
-        cv2.line(image, pt1, pt2, (0, 255, 0), 2)
+    # Sort points vertically
+    coords = [(p["top"], p["left"]) for p in points]
+    coords.sort()
+    
+    scale_top, scale_bottom = coords[0], coords[1]
+    child_top, child_bottom = coords[2], coords[3]
 
-        return image, height_cm, None
+    def euclidean(p1, p2):
+        return math.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
+    scale_px = euclidean(scale_top, scale_bottom)
+    child_px = euclidean(child_top, child_bottom)
+
+    scale_cm = st.number_input("Scale real height (cm)", min_value=1.0, value=30.0)
+
+    if scale_px == 0:
+        st.error("Invalid scale points")
+        return None
+
+    px_per_cm = scale_px / scale_cm
+    child_height_cm = child_px / px_per_cm
+
+    st.success(f"Estimated Child Height: {child_height_cm:.2f} cm")
+    return round(child_height_cm, 2)
