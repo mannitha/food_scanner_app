@@ -1,57 +1,46 @@
-# height_module.py
-
 import streamlit as st
 import cv2
 import numpy as np
 from PIL import Image
-import mediapipe as mp
+from streamlit_drawable_canvas import st_canvas
+from height_with_scale import estimate_height_with_manual_scale  # your custom function
 
-# Calibration constant: how many centimeters each pixel represents
-CM_PER_PIXEL = 0.45  # Adjust based on your camera setup
+def run_height_estimator():
+    st.markdown("📷 **Upload a full-body image with a 32 cm steel scale beside the person.**")
+    uploaded_file = st.file_uploader("Upload Image", type=["jpg", "jpeg", "png"], key="height_image_upload")
 
-# Initialize MediaPipe Pose model
-mp_pose = mp.solutions.pose
-
-# Load image from uploaded file and convert to BGR (OpenCV format)
-def load_image(uploaded_file):
-    img = Image.open(uploaded_file)
-    return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-
-# Estimate pixel height from nose to feet using MediaPipe landmarks
-def get_height_from_nose_to_feet(image):
-    with mp_pose.Pose(static_image_mode=True) as pose:
-        results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        if results.pose_landmarks:
-            h, w, _ = image.shape
-            landmarks = results.pose_landmarks.landmark
-
-            nose_y = int(landmarks[mp_pose.PoseLandmark.NOSE].y * h)
-            left_ankle_y = int(landmarks[mp_pose.PoseLandmark.LEFT_ANKLE].y * h)
-            right_ankle_y = int(landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE].y * h)
-            foot_y = max(left_ankle_y, right_ankle_y)
-
-            pixel_height = abs(foot_y - nose_y)
-            return pixel_height, nose_y, foot_y
-    return None, None, None
-
-# Main Streamlit function
-def run_height_estimator():  # ✅ Keep this name for integration
-    st.title("Nose-to-Toe Height Estimation")
-
-    uploaded_file = st.file_uploader("Upload image (nose near top, full body visible)", type=["jpg", "jpeg", "png"])
     if uploaded_file:
-        image = load_image(uploaded_file)
-        pixel_height, nose_y, foot_y = get_height_from_nose_to_feet(image)
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        img = cv2.imdecode(file_bytes, 1)
 
-        if pixel_height:
-            estimated_height_cm = pixel_height * CM_PER_PIXEL
-            center_x = image.shape[1] // 2
-            annotated = image.copy()
-            cv2.line(annotated, (center_x, nose_y), (center_x, foot_y), (0, 255, 0), 2)
+        st.markdown("🟢 **Click two points: top and bottom of the steel scale.**")
 
-            st.image(annotated, caption=f"Pixel Height: {pixel_height}px", use_column_width=True)
-            st.success(f"Estimated Height: *{estimated_height_cm:.2f} cm*")
-            return round(estimated_height_cm, 2)
+        canvas_result = st_canvas(
+            fill_color="rgba(255, 165, 0, 0.3)",
+            stroke_width=3,
+            stroke_color="#00FF00",
+            background_image=Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)),
+            update_streamlit=True,
+            height=img.shape[0],
+            width=img.shape[1],
+            drawing_mode="point",
+            point_display_radius=5,
+            key="canvas_height",
+        )
+
+        if canvas_result.json_data and len(canvas_result.json_data["objects"]) == 2:
+            points = [(int(obj["left"]), int(obj["top"])) for obj in canvas_result.json_data["objects"]]
+
+            with st.spinner("Estimating height..."):
+                annotated_img, height_cm, error = estimate_height_with_manual_scale(img.copy(), points)
+
+            if error:
+                st.error(error)
+                return None
+            else:
+                st.image(cv2.cvtColor(annotated_img, cv2.COLOR_BGR2RGB), caption="Processed Image", use_column_width=True)
+                st.success(f"✅ Estimated Height: **{height_cm:.2f} cm**")
+                return height_cm
         else:
-            st.error("Could not detect full body. Make sure the nose and feet are visible in the image.")
-    return None
+            st.info("Please mark **exactly two points** on the steel scale.")
+            return None
