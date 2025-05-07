@@ -6,4 +6,4 @@ pandas
 opencv-python
 numpy
 mediapipe
-streamlit-drawable-canvas
+streamlit-drawable-canvas==0.8.0
