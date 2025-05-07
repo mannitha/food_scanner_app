@@ -6,14 +6,19 @@ import numpy as np
 from PIL import Image
 import mediapipe as mp
 
-CM_PER_PIXEL = 0.45  # Adjust if needed
+# Calibration constant: how many centimeters each pixel represents
+CM_PER_PIXEL = 0.45  # Adjust based on your camera setup
+
+# Initialize MediaPipe Pose model
 mp_pose = mp.solutions.pose
 
+# Load image from uploaded file and convert to BGR (OpenCV format)
 def load_image(uploaded_file):
     img = Image.open(uploaded_file)
     return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
-def get_height_from_head_to_toes(image):
+# Estimate pixel height from nose to feet using MediaPipe landmarks
+def get_height_from_nose_to_feet(image):
     with mp_pose.Pose(static_image_mode=True) as pose:
         results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         if results.pose_landmarks:
@@ -29,23 +34,24 @@ def get_height_from_head_to_toes(image):
             return pixel_height, nose_y, foot_y
     return None, None, None
 
-def run_height_estimator():  # ✅ Use this exact function name
-    st.title("Head-to-Toe Height Estimation (Camera Aligned to Head)")
+# Main Streamlit function
+def run_height_estimator():  # ✅ Keep this name for integration
+    st.title("Nose-to-Toe Height Estimation")
 
-    uploaded_file = st.file_uploader("Upload image (head at top, full body visible)", type=["jpg", "jpeg", "png"])
+    uploaded_file = st.file_uploader("Upload image (nose near top, full body visible)", type=["jpg", "jpeg", "png"])
     if uploaded_file:
         image = load_image(uploaded_file)
-        pixel_height, head_y, foot_y = get_height_from_head_to_toes(image)
+        pixel_height, nose_y, foot_y = get_height_from_nose_to_feet(image)
 
         if pixel_height:
             estimated_height_cm = pixel_height * CM_PER_PIXEL
             center_x = image.shape[1] // 2
             annotated = image.copy()
-            cv2.line(annotated, (center_x, head_y), (center_x, foot_y), (0, 255, 0), 2)
+            cv2.line(annotated, (center_x, nose_y), (center_x, foot_y), (0, 255, 0), 2)
 
             st.image(annotated, caption=f"Pixel Height: {pixel_height}px", use_column_width=True)
             st.success(f"Estimated Height: *{estimated_height_cm:.2f} cm*")
             return round(estimated_height_cm, 2)
         else:
-            st.error("Could not detect full body. Make sure head is at top and feet are visible.")
+            st.error("Could not detect full body. Make sure the nose and feet are visible in the image.")
     return None
