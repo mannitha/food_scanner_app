@@ -43,9 +43,19 @@ def run_height_estimator():
     if uploaded_file:
         file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
         img = cv2.imdecode(file_bytes, 1)
+        
+        if img is None:
+            st.error("The uploaded file is not a valid image. Please try again.")
+            return None
+        
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_pil = Image.fromarray(img_rgb)
         img_data_url = pil_to_data_url(img_pil)
+
+        # Resize image to fit canvas
+        canvas_width = 800
+        aspect_ratio = img.shape[1] / img.shape[0]
+        canvas_height = int(canvas_width / aspect_ratio)
 
         st.markdown("🟢 **Click exactly two points marking the ends of the steel scale (top and bottom).**")
 
@@ -55,8 +65,8 @@ def run_height_estimator():
             stroke_color="#00FF00",
             background_image=img_data_url,
             update_streamlit=True,
-            height=img.shape[0],
-            width=img.shape[1],
+            height=canvas_height,
+            width=canvas_width,
             drawing_mode="point",
             point_display_radius=5,
             key="canvas",
