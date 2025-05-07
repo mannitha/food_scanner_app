@@ -4,6 +4,6 @@ python-dotenv
 google-generativeai
 requests
 pandas
-opencv-python
+opencv-python-headless
 numpy
 mediapipe
