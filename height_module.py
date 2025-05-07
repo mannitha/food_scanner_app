@@ -4,10 +4,11 @@ import numpy as np
 from PIL import Image
 import mediapipe as mp
 from streamlit_drawable_canvas import st_canvas
+from io import BytesIO
+import base64
+import math
 
-# Real-world scale length in cm
-SCALE_REAL_CM = 32.0
-
+SCALE_REAL_CM = 32  # Real-world length of the reference steel scale in cm
 mp_pose = mp.solutions.pose
 
 def load_image(uploaded_file):
@@ -27,19 +28,26 @@ def detect_keypoints(image):
             return head_y, foot_y
     return None, None
 
+def calculate_distance(p1, p2):
+    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
 def draw_landmarks(image, head_y, foot_y):
     annotated = image.copy()
     center_x = image.shape[1] // 2
-    cv2.line(annotated, (center_x, head_y), (center_x, foot_y), (0,255,0), 2)
-    cv2.circle(annotated, (center_x, head_y), 5, (255,0,0), -1)
-    cv2.circle(annotated, (center_x, foot_y), 5, (0,0,255), -1)
+    cv2.line(annotated, (center_x, head_y), (center_x, foot_y), (0, 255, 0), 2)
+    cv2.circle(annotated, (center_x, head_y), 5, (255, 0, 0), -1)
+    cv2.circle(annotated, (center_x, foot_y), 5, (0, 0, 255), -1)
     return annotated
 
-def calculate_distance(p1, p2):
-    return np.sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
+def pil_to_url(pil_image):
+    buf = BytesIO()
+    pil_image.save(buf, format="PNG")
+    byte_im = buf.getvalue()
+    base64_str = base64.b64encode(byte_im).decode()
+    return f"data:image/png;base64,{base64_str}"
 
 def run_height_estimator():
-    st.title("Height Measurement with Reference Scale")
+    st.title("Height Estimation with Reference Scale")
 
     col1, col2 = st.columns([1, 1])
     with col1:
@@ -48,7 +56,6 @@ def run_height_estimator():
         upload_button = st.button("🖼 Upload", use_container_width=True)
 
     image = None
-    uploaded_file = None
 
     if "input_mode" not in st.session_state:
         st.session_state.input_mode = None
@@ -62,67 +69,48 @@ def run_height_estimator():
         image_data = st.camera_input("Take a picture")
         if image_data:
             image = load_image(image_data)
-
     elif st.session_state.input_mode == "upload":
         uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
         if uploaded_file:
             image = load_image(uploaded_file)
 
     if image is not None:
-        st.subheader("Step 1: Select two points on the 32 cm scale")
+        st.subheader("Step 1: Mark two points on the 32 cm scale (placed beside the person)")
 
-        # Show canvas for user to mark scale endpoints
-        from io import BytesIO
-import base64
+        rgb_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        background_url = pil_to_url(rgb_pil)
 
-def pil_to_url(pil_image):
-    buf = BytesIO()
-    pil_image.save(buf, format="PNG")
-    byte_im = buf.getvalue()
-    base64_str = base64.b64encode(byte_im).decode()
-    return f"data:image/png;base64,{base64_str}"
-
-...
-
-# inside run_height_estimator()
-rgb_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-background_url = pil_to_url(rgb_pil)
-
-canvas_result = st_canvas(
-    fill_color="rgba(255, 165, 0, 0.3)",
-    stroke_width=2,
-    stroke_color="#000",
-    background_image=None,
-    background_image_url=background_url,
-    update_streamlit=True,
-    height=image.shape[0],
-    width=image.shape[1],
-    drawing_mode="point",
-    point_display_radius=5,
-    key="scale_canvas"
-)
-
+        canvas_result = st_canvas(
+            fill_color="rgba(255, 165, 0, 0.3)",
+            stroke_width=2,
+            stroke_color="#000",
+            background_image=None,
+            background_image_url=background_url,
+            update_streamlit=True,
+            height=image.shape[0],
+            width=image.shape[1],
+            drawing_mode="point",
+            point_display_radius=5,
+            key="scale_canvas"
+        )
 
         if canvas_result.json_data and len(canvas_result.json_data["objects"]) == 2:
-            # Extract scale endpoints
             p1 = canvas_result.json_data["objects"][0]["left"], canvas_result.json_data["objects"][0]["top"]
             p2 = canvas_result.json_data["objects"][1]["left"], canvas_result.json_data["objects"][1]["top"]
             pixel_distance = calculate_distance(p1, p2)
             pixels_per_cm = pixel_distance / SCALE_REAL_CM
 
             head_y, foot_y = detect_keypoints(image)
-
             if head_y is not None and foot_y is not None:
                 pixel_height = abs(foot_y - head_y)
                 estimated_height = pixel_height / pixels_per_cm
                 annotated_image = draw_landmarks(image, head_y, foot_y)
-
                 st.image(annotated_image, caption="Detected head and foot", use_column_width=True)
                 st.success(f"Estimated Height: *{estimated_height:.2f} cm*")
                 return round(estimated_height, 2)
             else:
                 st.error("Keypoints not detected. Try a clearer full-body photo.")
         else:
-            st.info("Please mark exactly **2 points** on the reference scale.")
+            st.info("Please mark exactly 2 points on the reference scale.")
 
     return None
