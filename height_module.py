@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
-from height_with_scale import estimate_height_with_manual_scale  # your custom function
+from height_module import run_height_estimator  # your custom function
 
 def run_height_estimator():
     st.markdown("📷 **Upload a full-body image with a 32 cm steel scale beside the person.**")
