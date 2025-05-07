@@ -38,6 +38,7 @@ st.markdown("""
 import json, os
 import pandas as pd
 import streamlit.components.v1 as components
+from PIL import Image
 from food_module import run_food_scanner
 from arm_module import run_muac
 from height_module import run_height_estimator
