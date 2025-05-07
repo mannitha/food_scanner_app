@@ -35,37 +35,13 @@ def draw_landmarks(image, head_y, foot_y):
     return annotated
 
 def run_height_estimator():
-    """Height estimation wrapped in a function."""
+    """Height estimation from uploaded image."""
     st.title("Height Measurement")
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        camera_button = st.button("📷 Camera", use_container_width=True)
-    with col2:
-        upload_button = st.button("🖼 Upload", use_container_width=True)
+    uploaded_file = st.file_uploader("Upload a full-body image", type=["jpg", "jpeg", "png"])
 
-    image = None
-    uploaded_file = None
-
-    if "input_mode" not in st.session_state:
-        st.session_state.input_mode = None
-
-    if camera_button:
-        st.session_state.input_mode = "camera"
-    elif upload_button:
-        st.session_state.input_mode = "upload"
-
-    if st.session_state.input_mode == "camera":
-        image_data = st.camera_input("Take a picture")
-        if image_data:
-            image = load_image(image_data)
-
-    elif st.session_state.input_mode == "upload":
-        uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
-        if uploaded_file:
-            image = load_image(uploaded_file)
-
-    if image is not None:
+    if uploaded_file:
+        image = load_image(uploaded_file)
         head_y, foot_y = detect_keypoints(image)
 
         if head_y is not None and foot_y is not None:
