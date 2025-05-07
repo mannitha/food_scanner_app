@@ -5,9 +5,7 @@ from streamlit_drawable_canvas import st_canvas
 import mediapipe as mp
 from PIL import Image
 
-# Streamlit Page Config
-st.set_page_config(page_title="Height Estimator", layout="centered")
-st.title("📏 Height Estimator (Using Steel Scale)")
+# ⚠️ Removed st.set_page_config from here
 
 SCALE_LENGTH_CM = 32  # Manual steel scale length
 mp_pose = mp.solutions.pose
@@ -17,7 +15,6 @@ def estimate_height_with_manual_scale(image, scale_pts):
     orig = image.copy()
     h_img, w_img, _ = image.shape
 
-    # Compute pixel distance between scale points
     pt1, pt2 = scale_pts
     scale_pixel_length = np.linalg.norm(np.array(pt1) - np.array(pt2))
     if scale_pixel_length == 0:
@@ -25,7 +22,6 @@ def estimate_height_with_manual_scale(image, scale_pts):
 
     pixels_per_cm = scale_pixel_length / SCALE_LENGTH_CM
 
-    # Detect pose landmarks
     with mp_pose.Pose(static_image_mode=True) as pose:
         results = pose.process(cv2.cvtColor(orig, cv2.COLOR_BGR2RGB))
         if not results.pose_landmarks:
@@ -40,7 +36,6 @@ def estimate_height_with_manual_scale(image, scale_pts):
         pixel_height = foot_y - head_y
         height_cm = pixel_height / pixels_per_cm
 
-        # Draw lines and markers
         center_x = w_img // 2
         cv2.line(image, (center_x, head_y), (center_x, foot_y), (255, 255, 0), 2)
         cv2.circle(image, (center_x, head_y), 5, (255, 0, 0), -1)
@@ -51,6 +46,7 @@ def estimate_height_with_manual_scale(image, scale_pts):
 
 
 def run_height_estimator():
+    st.title("📏 Height Estimator (Using Steel Scale)")
     st.markdown("📷 **Upload a full-body image with a visible 30–32 cm steel scale beside the person.**")
     uploaded_file = st.file_uploader("Upload Image", type=["jpg", "jpeg", "png"])
 
