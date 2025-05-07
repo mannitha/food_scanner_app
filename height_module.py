@@ -5,9 +5,6 @@ from PIL import Image
 import mediapipe as mp
 from streamlit_drawable_canvas import st_canvas
 
-# Set Streamlit page config first
-st.set_page_config(page_title="Height Estimator", layout="centered")
-
 # Constants
 SCALE_LENGTH_CM = 32  # length of the physical steel scale in cm
 mp_pose = mp.solutions.pose
@@ -87,5 +84,3 @@ def run_height_estimator():
 
         else:
             st.info("Please mark **exactly two points** on the steel scale.")
-
-run_height_estimator()
