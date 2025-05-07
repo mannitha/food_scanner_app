@@ -1,4 +1,4 @@
-streamlit
+streamlit==1.24.0
 python-dotenv
 google-generativeai
 requests
@@ -6,3 +6,4 @@ pandas
 opencv-python
 numpy
 mediapipe
+streamlit-drawable-canvas
