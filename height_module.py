@@ -17,13 +17,14 @@ def run_height_estimator(image: Image.Image):
 
     # Convert PIL image to OpenCV format (numpy array)
     img = np.array(image)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR for OpenCV
 
+    # Use the PIL image directly as the background for st_canvas
     canvas_result = st_canvas(
         fill_color="rgba(255, 165, 0, 0.3)",
         stroke_width=3,
         stroke_color="#00FF00",
-        background_image=image,
+        background_image=image,  # Pass PIL image here for background
         update_streamlit=True,
         height=image.height,
         width=image.width,
