@@ -72,18 +72,36 @@ def run_height_estimator():
         st.subheader("Step 1: Select two points on the 32 cm scale")
 
         # Show canvas for user to mark scale endpoints
-        canvas_result = st_canvas(
-            fill_color="rgba(255, 165, 0, 0.3)",
-            stroke_width=2,
-            stroke_color="#000",
-            background_image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)),
-            update_streamlit=True,
-            height=image.shape[0],
-            width=image.shape[1],
-            drawing_mode="point",
-            point_display_radius=5,
-            key="scale_canvas"
-        )
+        from io import BytesIO
+import base64
+
+def pil_to_url(pil_image):
+    buf = BytesIO()
+    pil_image.save(buf, format="PNG")
+    byte_im = buf.getvalue()
+    base64_str = base64.b64encode(byte_im).decode()
+    return f"data:image/png;base64,{base64_str}"
+
+...
+
+# inside run_height_estimator()
+rgb_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+background_url = pil_to_url(rgb_pil)
+
+canvas_result = st_canvas(
+    fill_color="rgba(255, 165, 0, 0.3)",
+    stroke_width=2,
+    stroke_color="#000",
+    background_image=None,
+    background_image_url=background_url,
+    update_streamlit=True,
+    height=image.shape[0],
+    width=image.shape[1],
+    drawing_mode="point",
+    point_display_radius=5,
+    key="scale_canvas"
+)
+
 
         if canvas_result.json_data and len(canvas_result.json_data["objects"]) == 2:
             # Extract scale endpoints
