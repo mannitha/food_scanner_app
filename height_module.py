@@ -4,8 +4,8 @@ import numpy as np
 from PIL import Image
 import mediapipe as mp
 
-# Hardcoded calibration factor (in cm/pixel)
-CALIBRATION_FACTOR = 0.2031
+# Use an estimated cm per pixel (from any known sample image)
+CM_PER_PIXEL = 0.45  # Adjust based on your initial test subject
 
 mp_pose = mp.solutions.pose
 
@@ -13,47 +13,42 @@ def load_image(uploaded_file):
     img = Image.open(uploaded_file)
     return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
-def detect_keypoints(image):
+def get_height_from_head_to_toes(image):
     with mp_pose.Pose(static_image_mode=True) as pose:
         results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         if results.pose_landmarks:
             h, w, _ = image.shape
             landmarks = results.pose_landmarks.landmark
-            head_y = int(landmarks[mp_pose.PoseLandmark.NOSE].y * h)
-            foot_left_y = int(landmarks[mp_pose.PoseLandmark.LEFT_ANKLE].y * h)
-            foot_right_y = int(landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE].y * h)
-            foot_y = max(foot_left_y, foot_right_y)
-            return head_y, foot_y
-    return None, None
 
-def draw_landmarks(image, head_y, foot_y):
-    annotated = image.copy()
-    center_x = image.shape[1] // 2
-    cv2.line(annotated, (center_x, head_y), (center_x, foot_y), (0,255,0), 2)
-    cv2.circle(annotated, (center_x, head_y), 5, (255,0,0), -1)
-    cv2.circle(annotated, (center_x, foot_y), 5, (0,0,255), -1)
-    return annotated
+            nose_y = int(landmarks[mp_pose.PoseLandmark.NOSE].y * h)
+            left_ankle_y = int(landmarks[mp_pose.PoseLandmark.LEFT_ANKLE].y * h)
+            right_ankle_y = int(landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE].y * h)
+            foot_y = max(left_ankle_y, right_ankle_y)
 
-def run_height_estimator():
-    """Height estimation from uploaded image."""
-    st.title("Height Measurement")
+            pixel_height = abs(foot_y - nose_y)
+            return pixel_height, nose_y, foot_y
+    return None, None, None
 
-    uploaded_file = st.file_uploader("Upload a full-body image", type=["jpg", "jpeg", "png"])
+def run_head_to_toe_estimator():
+    st.title("Head-to-Toe Height Estimation (Camera Aligned to Head)")
+
+    uploaded_file = st.file_uploader("Upload image (head at top, full body visible)", type=["jpg", "jpeg", "png"])
 
     if uploaded_file:
         image = load_image(uploaded_file)
-        head_y, foot_y = detect_keypoints(image)
+        pixel_height, head_y, foot_y = get_height_from_head_to_toes(image)
 
-        if head_y is not None and foot_y is not None:
-            pixel_height = abs(foot_y - head_y)
-            annotated_image = draw_landmarks(image, head_y, foot_y)
-            st.image(annotated_image, caption="Detected head and foot", use_column_width=True)
+        if pixel_height:
+            estimated_height_cm = pixel_height * CM_PER_PIXEL
 
-            estimated_height = CALIBRATION_FACTOR * pixel_height
-            st.success(f"Estimated Height: *{estimated_height:.2f} cm*")
-            return round(estimated_height, 2)
+            center_x = image.shape[1] // 2
+            annotated = image.copy()
+            cv2.line(annotated, (center_x, head_y), (center_x, foot_y), (0, 255, 0), 2)
+
+            st.image(annotated, caption=f"Pixel Height: {pixel_height}px", use_column_width=True)
+            st.success(f"Estimated Height: *{estimated_height_cm:.2f} cm*")
+            return round(estimated_height_cm, 2)
         else:
-            st.error("Keypoints not detected. Try a clearer full-body photo.")
-            return None
+            st.error("Could not detect full body. Make sure head is at top and feet are visible.")
 
     return None
