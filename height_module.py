@@ -78,21 +78,19 @@ def run_height_estimator():
         st.subheader("Step 1: Mark two points on the 32 cm scale (placed beside the person)")
 
         rgb_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        background_url = pil_to_url(rgb_pil)
+       canvas_result = st_canvas(
+    fill_color="rgba(255, 165, 0, 0.3)",
+    stroke_width=2,
+    stroke_color="#000",
+    background_image=rgb_pil,  # Direct PIL image here
+    update_streamlit=True,
+    height=image.shape[0],
+    width=image.shape[1],
+    drawing_mode="point",
+    point_display_radius=5,
+    key="scale_canvas"
+)
 
-        canvas_result = st_canvas(
-            fill_color="rgba(255, 165, 0, 0.3)",
-            stroke_width=2,
-            stroke_color="#000",
-            background_image=None,
-            background_image_url=background_url,
-            update_streamlit=True,
-            height=image.shape[0],
-            width=image.shape[1],
-            drawing_mode="point",
-            point_display_radius=5,
-            key="scale_canvas"
-        )
 
         if canvas_result.json_data and len(canvas_result.json_data["objects"]) == 2:
             p1 = canvas_result.json_data["objects"][0]["left"], canvas_result.json_data["objects"][0]["top"]
