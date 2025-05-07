@@ -26,7 +26,7 @@ def run_height_estimator():
         stroke_width=3,
         stroke_color="#000000",
         background_image=image,
-        update_streamlit=True,
+        update_streamlit_image_coordinates=True,
         height=image_np.shape[0],
         width=image_np.shape[1],
         drawing_mode="point",
