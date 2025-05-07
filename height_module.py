@@ -7,13 +7,17 @@ from streamlit_drawable_canvas import st_canvas
 import mediapipe as mp
 from PIL import Image
 
-def run_height_estimator(image):
+def run_height_estimator(image: Image.Image):
     SCALE_LENGTH_CM = 32
     mp_pose = mp.solutions.pose
 
     st.markdown("📷 **Upload a full-body image with a 30 cm steel scale beside the person.**")
     
     st.markdown("🟢 **Click exactly two points marking the ends of the steel scale (top and bottom).**")
+
+    # Convert PIL image to OpenCV format (numpy array)
+    img = np.array(image)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
     canvas_result = st_canvas(
         fill_color="rgba(255, 165, 0, 0.3)",
@@ -61,7 +65,7 @@ def run_height_estimator(image):
                 return image, round(height_cm, 2), None
 
         with st.spinner("Estimating height..."):
-            annotated_img, height_cm, error = estimate_height_with_manual_scale(cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR), points)
+            annotated_img, height_cm, error = estimate_height_with_manual_scale(img.copy(), points)
 
         if error:
             st.error(error)
