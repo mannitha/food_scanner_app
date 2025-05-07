@@ -38,7 +38,7 @@ st.markdown("""
 import json, os
 import pandas as pd
 import streamlit.components.v1 as components
-from PIL import Image
+from PIL import Image as PILImage
 from food_module import run_food_scanner
 from arm_module import run_muac
 from height_module import run_height_estimator
@@ -157,7 +157,7 @@ def height_step():
     uploaded_image = st.file_uploader("Upload a full-body image", type=["jpg", "jpeg", "png"])
 
     if uploaded_image is not None:
-        image = Image.open(uploaded_image)
+        image = PILImage.open(uploaded_image)  # Ensure the image is a PIL image
         st.image(image, caption="Uploaded Image", use_column_width=True)
 
         # Pass the PIL image to the height estimator
@@ -169,7 +169,6 @@ def height_step():
                 st.session_state.page = "arm"
     else:
         st.info("Please upload an image to continue.")
-
 
 def arm_step():
     st.title("📐 MUAC Estimator")
