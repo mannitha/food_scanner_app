@@ -1,4 +1,3 @@
-# height_module.py
 import streamlit as st
 import cv2
 import numpy as np
@@ -6,59 +5,29 @@ from streamlit_drawable_canvas import st_canvas
 import mediapipe as mp
 from PIL import Image
 
-SCALE_LENGTH_CM = 32
+# Streamlit Page Config
+st.set_page_config(page_title="Height Estimator", layout="centered")
+st.title("📏 Height Estimator (Using Steel Scale)")
+
+SCALE_LENGTH_CM = 32  # Manual steel scale length
 mp_pose = mp.solutions.pose
 
-def run_height_estimator():
-    st.markdown("### Upload an Image with a Steel Scale")
-    uploaded_file = st.file_uploader("Upload Image", type=["jpg", "jpeg", "png"])
-    if uploaded_file is None:
-        return None
-
-    image = Image.open(uploaded_file).convert("RGB")
-    image_np = np.array(image)
-
-    st.image(image, caption="Uploaded Image", use_column_width=True)
-
-    st.markdown("### Draw Two Points on the Steel Scale (Top and Bottom)")
-    canvas_result = st_canvas(
-        fill_color="rgba(255, 165, 0, 0.3)",
-        stroke_width=3,
-        stroke_color="#000000",
-        background_image=image,
-        update_streamlit_image_coordinates=True,
-        height=image_np.shape[0],
-        width=image_np.shape[1],
-        drawing_mode="point",
-        key="canvas",
-    )
-
-    if canvas_result.json_data and len(canvas_result.json_data["objects"]) >= 2:
-        scale_pts = []
-        for obj in canvas_result.json_data["objects"][:2]:
-            x, y = obj["left"], obj["top"]
-            scale_pts.append((x, y))
-
-        height_cm, annotated_img, error = estimate_height_with_manual_scale(image_np, scale_pts)
-        if error:
-            st.error(error)
-            return None
-        st.image(annotated_img, caption=f"Estimated Height: {height_cm:.1f} cm", use_column_width=True)
-        return round(height_cm, 1)
-    else:
-        st.info("Please mark two points on the scale.")
-        return None
 
 def estimate_height_with_manual_scale(image, scale_pts):
     orig = image.copy()
     h_img, w_img, _ = image.shape
 
+    # Compute pixel distance between scale points
     pt1, pt2 = scale_pts
     scale_pixel_length = np.linalg.norm(np.array(pt1) - np.array(pt2))
+    if scale_pixel_length == 0:
+        return None, None, "❌ Scale points are too close or identical."
+
     pixels_per_cm = scale_pixel_length / SCALE_LENGTH_CM
 
+    # Detect pose landmarks
     with mp_pose.Pose(static_image_mode=True) as pose:
-        results = pose.process(cv2.cvtColor(orig, cv2.COLOR_RGB2BGR))
+        results = pose.process(cv2.cvtColor(orig, cv2.COLOR_BGR2RGB))
         if not results.pose_landmarks:
             return None, None, "❌ Body landmarks not detected."
 
@@ -71,9 +40,52 @@ def estimate_height_with_manual_scale(image, scale_pts):
         pixel_height = foot_y - head_y
         height_cm = pixel_height / pixels_per_cm
 
+        # Draw lines and markers
         center_x = w_img // 2
         cv2.line(image, (center_x, head_y), (center_x, foot_y), (255, 255, 0), 2)
         cv2.circle(image, (center_x, head_y), 5, (255, 0, 0), -1)
-        cv2.circle(image, (center_x, foot_y), 5, (0, 255, 0), -1)
+        cv2.circle(image, (center_x, foot_y), 5, (0, 0, 255), -1)
+        cv2.line(image, pt1, pt2, (0, 255, 0), 2)
 
-        return height_cm, image, None
+        return image, height_cm, None
+
+
+def run_height_estimator():
+    st.markdown("📷 **Upload a full-body image with a visible 30–32 cm steel scale beside the person.**")
+    uploaded_file = st.file_uploader("Upload Image", type=["jpg", "jpeg", "png"])
+
+    if uploaded_file:
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        img = cv2.imdecode(file_bytes, 1)
+
+        st.markdown("🟢 **Mark two points on the image representing the top and bottom of the steel scale.**")
+
+        canvas_result = st_canvas(
+            fill_color="rgba(255, 165, 0, 0.3)",
+            stroke_width=3,
+            stroke_color="#00FF00",
+            background_image=Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)),
+            height=img.shape[0],
+            width=img.shape[1],
+            drawing_mode="point",
+            point_display_radius=5,
+            key="canvas",
+        )
+
+        if canvas_result.json_data and len(canvas_result.json_data["objects"]) == 2:
+            points = [(int(obj["left"]), int(obj["top"])) for obj in canvas_result.json_data["objects"]]
+
+            with st.spinner("Estimating height..."):
+                annotated_img, height_cm, error = estimate_height_with_manual_scale(img.copy(), points)
+
+            if error:
+                st.error(error)
+            else:
+                st.image(cv2.cvtColor(annotated_img, cv2.COLOR_BGR2RGB),
+                         caption="Processed Image", use_column_width=True)
+                st.success(f"✅ Estimated Height: **{height_cm:.2f} cm**")
+                return height_cm
+        else:
+            st.info("Please mark **exactly two points** on the steel scale.")
+
+    return None
