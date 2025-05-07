@@ -160,6 +160,7 @@ def height_step():
         image = Image.open(uploaded_image)
         st.image(image, caption="Uploaded Image", use_column_width=True)
 
+        # Pass the PIL image to the height estimator
         height_result = run_height_estimator(image)
 
         if height_result:
@@ -168,6 +169,7 @@ def height_step():
                 st.session_state.page = "arm"
     else:
         st.info("Please upload an image to continue.")
+
 
 def arm_step():
     st.title("📐 MUAC Estimator")
