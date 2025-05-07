@@ -1,4 +1,6 @@
 import streamlit as st
+st.set_page_config(page_title="Height Estimator (Manual Scale)", layout="centered")
+
 import cv2
 import numpy as np
 from streamlit_drawable_canvas import st_canvas
