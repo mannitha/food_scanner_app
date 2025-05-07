@@ -3,7 +3,12 @@ import cv2
 import numpy as np
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
-from height_module import run_height_estimator  # your custom function
+
+# Define the function directly here if height_with_scale is merged
+def estimate_height_with_manual_scale(image, points):
+    # Your height estimation logic here
+    # Return: annotated_img, height_cm, error (None if no error)
+    pass  # Replace with actual logic
 
 def run_height_estimator():
     st.markdown("📷 **Upload a full-body image with a 32 cm steel scale beside the person.**")
@@ -36,11 +41,6 @@ def run_height_estimator():
 
             if error:
                 st.error(error)
-                return None
             else:
                 st.image(cv2.cvtColor(annotated_img, cv2.COLOR_BGR2RGB), caption="Processed Image", use_column_width=True)
                 st.success(f"✅ Estimated Height: **{height_cm:.2f} cm**")
-                return height_cm
-        else:
-            st.info("Please mark **exactly two points** on the steel scale.")
-            return None
