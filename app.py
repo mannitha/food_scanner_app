@@ -152,12 +152,21 @@ def child_info_step():
 def height_step():
     st.title("📏 Height Estimator")
     back_button()
-    height_result = run_height_estimator()
-    if height_result:
-        st.session_state.height_result = height_result
-        if st.button("Next"):
-            st.session_state.page = "arm"
 
+    uploaded_image = st.file_uploader("Upload a full-body image", type=["jpg", "jpeg", "png"])
+
+    if uploaded_image is not None:
+        image = Image.open(uploaded_image)
+        st.image(image, caption="Uploaded Image", use_column_width=True)
+
+        height_result = run_height_estimator(image)
+
+        if height_result:
+            st.session_state.height_result = height_result
+            if st.button("Next"):
+                st.session_state.page = "arm"
+    else:
+        st.info("Please upload an image to continue.")
 
 def arm_step():
     st.title("📐 MUAC Estimator")
