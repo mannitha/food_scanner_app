@@ -1,12 +1,12 @@
+# height_module.py
+
 import streamlit as st
 import cv2
 import numpy as np
 from PIL import Image
 import mediapipe as mp
 
-# Use an estimated cm per pixel (from any known sample image)
-CM_PER_PIXEL = 0.45  # Adjust based on your initial test subject
-
+CM_PER_PIXEL = 0.45  # Adjust if needed
 mp_pose = mp.solutions.pose
 
 def load_image(uploaded_file):
@@ -29,18 +29,16 @@ def get_height_from_head_to_toes(image):
             return pixel_height, nose_y, foot_y
     return None, None, None
 
-def run_head_to_toe_estimator():
+def run_height_estimator():  # ✅ Use this exact function name
     st.title("Head-to-Toe Height Estimation (Camera Aligned to Head)")
 
     uploaded_file = st.file_uploader("Upload image (head at top, full body visible)", type=["jpg", "jpeg", "png"])
-
     if uploaded_file:
         image = load_image(uploaded_file)
         pixel_height, head_y, foot_y = get_height_from_head_to_toes(image)
 
         if pixel_height:
             estimated_height_cm = pixel_height * CM_PER_PIXEL
-
             center_x = image.shape[1] // 2
             annotated = image.copy()
             cv2.line(annotated, (center_x, head_y), (center_x, foot_y), (0, 255, 0), 2)
@@ -50,5 +48,4 @@ def run_head_to_toe_estimator():
             return round(estimated_height_cm, 2)
         else:
             st.error("Could not detect full body. Make sure head is at top and feet are visible.")
-
     return None
