@@ -149,11 +149,18 @@ def child_info_step():
     st.session_state.child_weight = st.number_input("Weight (kg)", min_value=0.0)
     if st.button("Continue"): st.session_state.page = "height"
 
+
 def height_step():
     st.title("📏 Height Estimator")
     back_button()
+
+    # Now calling the new height estimation method with canvas
     st.session_state.height_result = run_height_estimator()
-    if st.button("Next"): st.session_state.page = "arm"
+
+    # Proceeding to next step if the height result is not None
+    if st.session_state.height_result:
+        if st.button("Next"): 
+            st.session_state.page = "arm"
 
 def arm_step():
     st.title("📐 MUAC Estimator")
