@@ -1,3 +1,4 @@
+pip==23.1  
 streamlit==1.16.0
 python-dotenv
 google-generativeai
