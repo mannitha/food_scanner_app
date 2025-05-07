@@ -152,8 +152,12 @@ def child_info_step():
 def height_step():
     st.title("📏 Height Estimator")
     back_button()
-    st.session_state.height_result = run_height_estimator()
-    if st.button("Next"): st.session_state.page = "arm"
+    height_result = run_height_estimator()
+    if height_result:
+        st.session_state.height_result = height_result
+        if st.button("Next"):
+            st.session_state.page = "arm"
+
 
 def arm_step():
     st.title("📐 MUAC Estimator")
