@@ -6,3 +6,4 @@ pandas
 opencv-python
 numpy
 mediapipe
+streamlit-drawable-canvas
