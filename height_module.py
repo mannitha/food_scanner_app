@@ -2,52 +2,92 @@ import streamlit as st
 import cv2
 import numpy as np
 from PIL import Image
-from height_with_scale import estimate_height_with_manual_scale  # Make sure this function exists
-from streamlit_drawable_canvas import st_canvas
+import mediapipe as mp
+from streamlit_image_coordinates import streamlit_image_coordinates
+
+# Initialize MediaPipe
+mp_pose = mp.solutions.pose
+
+def detect_keypoints(image):
+    with mp_pose.Pose(static_image_mode=True) as pose:
+        results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        if results.pose_landmarks:
+            h, w, _ = image.shape
+            landmarks = results.pose_landmarks.landmark
+            head_y = int(landmarks[mp_pose.PoseLandmark.NOSE].y * h)
+            foot_left_y = int(landmarks[mp_pose.PoseLandmark.LEFT_ANKLE].y * h)
+            foot_right_y = int(landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE].y * h)
+            foot_y = max(foot_left_y, foot_right_y)
+            return head_y, foot_y
+    return None, None
+
+def draw_landmarks(image, head_y, foot_y):
+    annotated = image.copy()
+    center_x = image.shape[1] // 2
+    cv2.line(annotated, (center_x, head_y), (center_x, foot_y), (0, 255, 0), 2)
+    cv2.circle(annotated, (center_x, head_y), 5, (255, 0, 0), -1)
+    cv2.circle(annotated, (center_x, foot_y), 5, (0, 0, 255), -1)
+    return annotated
+
+def get_pixel_distance(p1, p2):
+    return np.linalg.norm(np.array(p1) - np.array(p2))
 
 def run_height_estimator():
-    st.subheader("Upload Image for Height Estimation")
-    uploaded_file = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
+    st.title("📏 Height Estimator from Single Image")
+    st.markdown("Upload a full-body image **with a visible reference object**, and specify its real-world length.")
 
-    if uploaded_file:
-        # Open and display the image
-        image = Image.open(uploaded_file)
-        image = image.convert("RGB")
-        image_np = np.array(image)
-        h, w = image_np.shape[:2]
+    img_file = st.file_uploader("Upload image", type=["jpg", "jpeg", "png"])
 
-        # Create the canvas
-        canvas_result = st_canvas(
-            fill_color="rgba(255, 0, 0, 0.3)",  # Transparent red color for the drawing
-            stroke_width=2,
-            stroke_color="#00FF00",  # Green color for drawing the line
-            background_image=image,
-            update_streamlit=True,
-            height=h,
-            width=w,
-            drawing_mode="line",  # Allowing drawing lines
-            key="canvas"
-        )
+    if img_file:
+        image = Image.open(img_file).convert("RGB")
+        img_np = np.array(image)
+        image_copy = img_np.copy()
 
-        # Check if canvas has data
-        if canvas_result.json_data and "objects" in canvas_result.json_data:
-            objs = canvas_result.json_data["objects"]
-            if len(objs) >= 1 and objs[0]["type"] == "line":
-                pt1 = (int(objs[0]["x1"]), int(objs[0]["y1"]))  # Start point of the line
-                pt2 = (int(objs[0]["x2"]), int(objs[0]["y2"]))  # End point of the line
-                
-                # Debug output to check line coordinates
-                st.write(f"Line points: {pt1} to {pt2}")
-                
-                # Call the height estimation function with the image and line coordinates
-                output_image, height_cm, error = estimate_height_with_manual_scale(image_np.copy(), [pt1, pt2])
-                
-                if error:
-                    st.error(error)  # Show error if something went wrong
-                    return None
-                
-                # Display the result image and estimated height
-                st.image(output_image, caption=f"Estimated Height: {height_cm:.2f} cm", use_column_width=True)
-                return round(height_cm, 2)
+        reference_length = st.number_input("Enter the real-world length of the reference object (in cm)", min_value=1.0, step=0.5)
 
+        st.subheader("Step 1: Click two points on the reference object")
+
+        # Initialize points list
+        if "points" not in st.session_state:
+            st.session_state.points = []
+
+        # Draw existing points on image copy
+        for i, (x, y) in enumerate(st.session_state.points):
+            cv2.circle(image_copy, (x, y), 8, (0, 0, 255), -1)
+            cv2.putText(image_copy, f"P{i+1}", (x+10, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+
+        # Use the annotated image as the click input
+        coords = streamlit_image_coordinates(Image.fromarray(image_copy), key="click_img")
+
+        # Save clicked coordinates (max 2)
+        if coords and len(st.session_state.points) < 2:
+            st.session_state.points.append((int(coords['x']), int(coords['y'])))
+
+        # Reset button
+        if st.button("🔄 Reset Points"):
+            st.session_state.points = []
+
+        # Proceed if two points selected
+        if len(st.session_state.points) == 2:
+            x1, y1 = st.session_state.points[0]
+            x2, y2 = st.session_state.points[1]
+
+            pixel_dist = get_pixel_distance((x1, y1), (x2, y2))
+            calibration_factor = reference_length / pixel_dist
+            st.success(f"Calibration complete: {calibration_factor:.4f} cm/pixel")
+
+            st.subheader("Step 2: Estimating height from landmarks")
+            image_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+            head_y, foot_y = detect_keypoints(image_bgr)
+
+            if head_y is not None and foot_y is not None:
+                pixel_height = abs(foot_y - head_y)
+                estimated_height = calibration_factor * pixel_height
+                annotated_img = draw_landmarks(image_bgr, head_y, foot_y)
+                st.image(annotated_img, caption="Estimated Height", channels="BGR")
+                st.success(f"Estimated Height: **{estimated_height:.2f} cm**")
+                return estimated_height
+            else:
+                st.error("❌ Could not detect body landmarks. Please try a clearer full-body image.")
+                return None
     return None
