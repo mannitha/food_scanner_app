@@ -110,6 +110,7 @@ def back_button():
             "food_only": "nutrimann_info",
             "food_summary": "food_only",
             "view_old_data": "nutrition_choices",
+            "view_data_table": "nutrition_choices",
             "view_old_food": "nutrimann_choices",
             "edit_food_entry": "view_old_food"
         }
@@ -139,7 +140,9 @@ def nutrition_choices_step():
     with col1: 
         if st.button("➕ New Entry"): st.session_state.page = "child_info"
     with col2: 
-        if st.button("📄 View Previous Data"): st.session_state.page = "view_old_data"
+        if st.button("🗑️ Delete Records"): st.session_state.page = "view_old_data"
+    with st.container():
+        if st.button("📊 View Previous Data Summary"): st.session_state.page = "view_data_table"
 
 def child_info_step():
     st.title("📋 Child Information")
@@ -157,7 +160,6 @@ def height_step():
         st.session_state.height_result = height_result
         if st.button("Next"):
             st.session_state.page = "arm"
-
 
 def arm_step():
     st.title("📐 MUAC Estimator")
@@ -193,18 +195,16 @@ def done_step():
         if st.button("🏠 Back to Menu"): st.session_state.page = "nutrition_choices"
 
 def view_old_data_step():
-    st.title("📄 Previous Entries")
+    st.title("🗑️ Delete Records")
     back_button()
     data = load_nutrition_data()
     if not data:
         st.info("No records.")
         return
-
     df = pd.DataFrame(data)
     if df.empty:
         st.info("No records.")
         return
-
     for i, row in df.iterrows():
         with st.expander(f"{row['Name']} - Age {row['Age']}"):
             st.write(row)
@@ -213,6 +213,16 @@ def view_old_data_step():
                 save_nutrition_data(df.to_dict(orient="records"))
                 st.success(f"Deleted entry for {row['Name']}")
                 st.rerun()
+
+def view_data_table_step():
+    st.title("📊 Previous Data Summary")
+    back_button()
+    data = load_nutrition_data()
+    if not data:
+        st.info("No records.")
+        return
+    df = pd.DataFrame(data)
+    st.dataframe(df, use_container_width=True)
 
 def nutrimann_choices_step():
     st.title("🍴 NutriMann")
@@ -305,6 +315,7 @@ def main():
             case "select_flow": select_flow_step()
             case "nutrition_choices": nutrition_choices_step()
             case "view_old_data": view_old_data_step()
+            case "view_data_table": view_data_table_step()
             case "child_info": child_info_step()
             case "height": height_step()
             case "arm": arm_step()
