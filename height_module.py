@@ -1,4 +1,3 @@
-# height_module.py
 import streamlit as st
 import cv2
 import numpy as np
@@ -8,17 +7,19 @@ from streamlit_image_coordinates import streamlit_image_coordinates
 
 mp_pose = mp.solutions.pose
 
+# Initialize pose only once
+pose_detector = mp_pose.Pose(static_image_mode=True)
+
 def detect_keypoints(image):
-    with mp_pose.Pose(static_image_mode=True) as pose:
-        results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        if results.pose_landmarks:
-            h, w, _ = image.shape
-            landmarks = results.pose_landmarks.landmark
-            head_y = int(landmarks[mp_pose.PoseLandmark.NOSE].y * h)
-            foot_left_y = int(landmarks[mp_pose.PoseLandmark.LEFT_ANKLE].y * h)
-            foot_right_y = int(landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE].y * h)
-            foot_y = max(foot_left_y, foot_right_y)
-            return head_y, foot_y
+    results = pose_detector.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    if results.pose_landmarks:
+        h, w, _ = image.shape
+        landmarks = results.pose_landmarks.landmark
+        head_y = int(landmarks[mp_pose.PoseLandmark.NOSE].y * h)
+        foot_left_y = int(landmarks[mp_pose.PoseLandmark.LEFT_ANKLE].y * h)
+        foot_right_y = int(landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE].y * h)
+        foot_y = max(foot_left_y, foot_right_y)
+        return head_y, foot_y
     return None, None
 
 def draw_landmarks(image, head_y, foot_y):
@@ -38,6 +39,10 @@ def run_height_estimator():
 
     if img_file:
         image = Image.open(img_file).convert("RGB")
+
+        # Downscale image for faster processing (keep aspect ratio)
+        max_dim = 640
+        image.thumbnail((max_dim, max_dim), Image.ANTIALIAS)
         img_np = np.array(image)
         image_copy = img_np.copy()
 
