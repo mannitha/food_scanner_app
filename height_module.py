@@ -1,25 +1,36 @@
-# height_module.py
 import streamlit as st
-import cv2
 import numpy as np
+import tensorflow as tf
+import tensorflow_hub as hub
+import cv2
 from PIL import Image
-import mediapipe as mp
 from streamlit_image_coordinates import streamlit_image_coordinates
 
-mp_pose = mp.solutions.pose
+# Load MoveNet model from TF Hub
+movenet = hub.load("https://tfhub.dev/google/movenet/singlepose/lightning/4")
+input_size = 192  # Model expects 192x192
 
-def detect_keypoints(image):
-    with mp_pose.Pose(static_image_mode=True, model_complexity=0, enable_segmentation=False) as pose:
-        results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        if results.pose_landmarks:
-            h, w, _ = image.shape
-            landmarks = results.pose_landmarks.landmark
-            head_y = int(landmarks[mp_pose.PoseLandmark.NOSE].y * h)
-            foot_left_y = int(landmarks[mp_pose.PoseLandmark.LEFT_ANKLE].y * h)
-            foot_right_y = int(landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE].y * h)
-            foot_y = max(foot_left_y, foot_right_y)
-            return head_y, foot_y
-    return None, None
+KEYPOINT_DICT = {
+    "nose": 0,
+    "left_ankle": 15,
+    "right_ankle": 16
+}
+
+def detect_keypoints_movenet(image):
+    img_resized = tf.image.resize_with_pad(tf.convert_to_tensor(image), input_size, input_size)
+    input_tensor = tf.expand_dims(img_resized, axis=0)
+    input_tensor = tf.cast(input_tensor, dtype=tf.int32)
+    
+    outputs = movenet.signatures['serving_default'](input_tensor)
+    keypoints = outputs['output_0'][0, 0, :, :]  # (17, 3)
+
+    h, w, _ = image.shape
+    nose_y = int(keypoints[KEYPOINT_DICT["nose"]][1] * h)
+    left_ankle_y = int(keypoints[KEYPOINT_DICT["left_ankle"]][1] * h)
+    right_ankle_y = int(keypoints[KEYPOINT_DICT["right_ankle"]][1] * h)
+    foot_y = max(left_ankle_y, right_ankle_y)
+
+    return nose_y, foot_y
 
 def draw_landmarks(image, head_y, foot_y):
     annotated = image.copy()
@@ -38,10 +49,6 @@ def run_height_estimator():
 
     if img_file:
         image = Image.open(img_file).convert("RGB")
-
-        # Resize large images for performance
-        max_dim = 800
-        image.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
         img_np = np.array(image)
         image_copy = img_np.copy()
 
@@ -52,7 +59,6 @@ def run_height_estimator():
         if "points" not in st.session_state:
             st.session_state.points = []
 
-        # Draw clicked points
         for i, (x, y) in enumerate(st.session_state.points):
             cv2.circle(image_copy, (x, y), 8, (0, 0, 255), -1)
             cv2.putText(image_copy, f"P{i+1}", (x+10, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
@@ -73,14 +79,13 @@ def run_height_estimator():
             st.success(f"Calibration: {calibration_factor:.4f} cm/pixel")
 
             st.subheader("Step 2: Estimating height from landmarks")
-            image_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-            head_y, foot_y = detect_keypoints(image_bgr)
+            head_y, foot_y = detect_keypoints_movenet(img_np)
 
             if head_y is not None and foot_y is not None:
                 pixel_height = abs(foot_y - head_y)
                 estimated_height = calibration_factor * pixel_height
-                annotated_img = draw_landmarks(image_bgr, head_y, foot_y)
-                st.image(annotated_img, caption="Estimated Height", channels="BGR")
+                annotated_img = draw_landmarks(img_np, head_y, foot_y)
+                st.image(annotated_img, caption="Estimated Height", channels="RGB")
                 st.success(f"Estimated Height: **{estimated_height:.2f} cm**")
                 return round(estimated_height, 2)
             else:
