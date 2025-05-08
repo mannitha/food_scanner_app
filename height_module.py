@@ -1,3 +1,4 @@
+# height_module.py
 import streamlit as st
 import cv2
 import numpy as np
@@ -5,7 +6,6 @@ from PIL import Image
 import mediapipe as mp
 from streamlit_image_coordinates import streamlit_image_coordinates
 
-# Initialize MediaPipe
 mp_pose = mp.solutions.pose
 
 def detect_keypoints(image):
@@ -33,9 +33,7 @@ def get_pixel_distance(p1, p2):
     return np.linalg.norm(np.array(p1) - np.array(p2))
 
 def run_height_estimator():
-    st.title("📏 Height Estimator from Single Image")
     st.markdown("Upload a full-body image **with a visible reference object**, and specify its real-world length.")
-
     img_file = st.file_uploader("Upload image", type=["jpg", "jpeg", "png"])
 
     if img_file:
@@ -47,34 +45,27 @@ def run_height_estimator():
 
         st.subheader("Step 1: Click two points on the reference object")
 
-        # Initialize points list
         if "points" not in st.session_state:
             st.session_state.points = []
 
-        # Draw existing points on image copy
         for i, (x, y) in enumerate(st.session_state.points):
             cv2.circle(image_copy, (x, y), 8, (0, 0, 255), -1)
             cv2.putText(image_copy, f"P{i+1}", (x+10, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
-        # Use the annotated image as the click input
         coords = streamlit_image_coordinates(Image.fromarray(image_copy), key="click_img")
 
-        # Save clicked coordinates (max 2)
         if coords and len(st.session_state.points) < 2:
             st.session_state.points.append((int(coords['x']), int(coords['y'])))
 
-        # Reset button
         if st.button("🔄 Reset Points"):
             st.session_state.points = []
 
-        # Proceed if two points selected
         if len(st.session_state.points) == 2:
             x1, y1 = st.session_state.points[0]
             x2, y2 = st.session_state.points[1]
-
             pixel_dist = get_pixel_distance((x1, y1), (x2, y2))
             calibration_factor = reference_length / pixel_dist
-            st.success(f"Calibration complete: {calibration_factor:.4f} cm/pixel")
+            st.success(f"Calibration: {calibration_factor:.4f} cm/pixel")
 
             st.subheader("Step 2: Estimating height from landmarks")
             image_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
@@ -86,8 +77,7 @@ def run_height_estimator():
                 annotated_img = draw_landmarks(image_bgr, head_y, foot_y)
                 st.image(annotated_img, caption="Estimated Height", channels="BGR")
                 st.success(f"Estimated Height: **{estimated_height:.2f} cm**")
-                return estimated_height
+                return round(estimated_height, 2)
             else:
-                st.error("❌ Could not detect body landmarks. Please try a clearer full-body image.")
-                return None
+                st.error("❌ Could not detect landmarks. Try another image.")
     return None
