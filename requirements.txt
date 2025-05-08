@@ -9,5 +9,3 @@ mediapipe
 Pillow
 streamlit-image-coordinates
 streamlit-drawable-canvas
-tensorflow==2.15.0
-tensorflow-hub==0.16.1
