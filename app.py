@@ -138,5 +138,3 @@ def nutrition_choices_step():
     col1, col2 = st.columns(2)
     with col1: 
         if st.button("➕ New Entry"): st.session_state.page = "child_info"
-::contentReference[oaicite:0]{index=0}
- 
