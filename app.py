@@ -37,6 +37,7 @@ st.markdown("""
 
 import json, os
 import pandas as pd
+from datetime import datetime
 import streamlit.components.v1 as components
 from food_module import run_food_scanner
 from muac_module import run_muac_estimator, classify_muac
@@ -50,13 +51,20 @@ components.html("""
     <meta name="apple-mobile-web-app-title" content="My App">
 """, height=0)
 
-USER_DATA_FILE = os.path.join(os.path.expanduser("~"), ".malnutrition_app", "users.json")
-os.makedirs(os.path.dirname(USER_DATA_FILE), exist_ok=True)
+user_data_file = os.path.join(os.getcwd(), "users.json")
 
 def get_nutrition_file(): return f"nutrition_data_{st.session_state.username}.json"
 def get_food_file(): return f"food_data_{st.session_state.username}.json"
-def load_users(): return json.load(open(USER_DATA_FILE)) if os.path.exists(USER_DATA_FILE) else {}
-def save_users(users): json.dump(users, open(USER_DATA_FILE, "w"))
+def load_users():
+    if os.path.exists(user_data_file):
+        with open(user_data_file, "r") as f:
+            return json.load(f)
+    return {}
+
+# Save users to JSON file
+def save_users(users):
+    with open(user_data_file, "w") as f:
+        json.dump(users, f, indent=4)
 
 def load_nutrition_data():
     file = get_nutrition_file()
