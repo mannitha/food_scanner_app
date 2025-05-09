@@ -164,17 +164,23 @@ def height_step():
             st.session_state.page = "arm"
 
 def arm_step():
-    st.markdown("MUAC Estimation")
+    st.markdown("### MUAC Estimation")
 
-    # Run MUAC detection logic
-    run_muac_estimator()
+    # Run the MUAC estimation logic and capture the result
+    muac_value = run_muac_estimator()
 
-    # Get values from session state
+    # Store values into session_state if valid
+    if muac_value is not None:
+        status, _ = classify_muac(muac_value)
+        st.session_state["arm_val"] = muac_value
+        st.session_state["muac_status"] = status
+
+    # Display saved values
     arm_val = st.session_state.get("arm_val")
     muac_status = st.session_state.get("muac_status")
-
+    
     if arm_val is not None and muac_status is not None:
-        st.markdown(f"**Saved MUAC:** {arm_val} cm &nbsp;&nbsp;|&nbsp;&nbsp; **Status:** {muac_status}")
+        st.markdown(f"**Saved MUAC:** `{arm_val} cm` &nbsp;&nbsp;|&nbsp;&nbsp; **Status:** `{muac_status}`")
 
     # Navigation buttons
     col1, col2 = st.columns(2)
@@ -184,7 +190,7 @@ def arm_step():
             st.rerun()
     with col2:
         if st.button("➡️ Next"):
-            st.session_state.arm_value = arm_val
+            st.session_state["arm_value"] = arm_val  # optionally use a unified name
             st.session_state.page = "done"
             st.rerun()
 
