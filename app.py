@@ -330,13 +330,18 @@ def edit_food_entry_step():
     idx = st.session_state.edit_index
     data = load_food_data()
     entry = data[idx]
-    name = st.text_input("Name", entry["Name"])
+    date = st.date_input(
+    "Date",
+    value=datetime.strptime(entry["Date"], '%Y-%m-%d') if "Date" in entry else datetime.today(),
+    min_value=datetime(2020, 1, 1),
+    max_value=datetime.today()
+    )
     time = st.selectbox("Meal Timing", ["Breakfast", "Lunch", "Dinner", "Snack", "Other"],
                         index=["Breakfast", "Lunch", "Dinner", "Snack", "Other"].index(entry["Meal Timing"]))
     df = pd.DataFrame(entry["Nutrition Table"])
     st.table(df)
     if st.button("Save Changes"):
-        data[idx]["Name"] = name
+        data[idx]["Date"] = date
         data[idx]["Meal Timing"] = time
         save_food_data(data)
         st.success("Updated!")
