@@ -6,7 +6,7 @@ import mediapipe as mp
 
 def muac():
 
-    # Average real-world shoulder widths (cm) by age group
+    # Estimated real-world shoulder widths (cm) by age group
     SHOULDER_WIDTHS = {
         '4-6': 26,
         '7-9': 28,
@@ -61,7 +61,7 @@ def muac():
             else:
                 return "Normal", "green"
 
-    st.title("MUAC Estimation using Image")
+    st.title("MUAC Estimation Using Shoulder Width")
 
     age_group = st.selectbox("Select Age Group:", options=list(SHOULDER_WIDTHS.keys()))
     uploaded_file = st.file_uploader("Upload Image", type=["jpg", "jpeg", "png"])
@@ -71,11 +71,18 @@ def muac():
         keypoints = detect_keypoints(image)
 
         if "left_shoulder" in keypoints and "right_shoulder" in keypoints:
-            shoulder_pixel_width = np.linalg.norm(np.array(keypoints["left_shoulder"]) - np.array(keypoints["right_shoulder"]))
+            shoulder_pixel_width = np.linalg.norm(
+                np.array(keypoints["left_shoulder"]) - np.array(keypoints["right_shoulder"])
+            )
+
+            if shoulder_pixel_width < 30 or shoulder_pixel_width > 1000:
+                st.error("Unrealistic shoulder width detected. Please upload a clearer image taken from the side or front view.")
+                return
+
             real_shoulder_width_cm = SHOULDER_WIDTHS[age_group]
             scale = real_shoulder_width_cm / shoulder_pixel_width  # cm per pixel
 
-            # Pick better visible arm
+            # Use the visible arm
             if "left_elbow" in keypoints:
                 arm_pixel_len = np.linalg.norm(np.array(keypoints["left_shoulder"]) - np.array(keypoints["left_elbow"]))
                 annotated = draw_landmarks(image, keypoints["left_shoulder"], keypoints["left_elbow"])
@@ -94,8 +101,16 @@ def muac():
             status, color = classify_muac(muac_cm, age_group)
             st.markdown(f'<h4 style="color:{color};">Nutrition Status: {status}</h4>', unsafe_allow_html=True)
 
+            # Optional debug info
+            with st.expander("Debug Info"):
+                st.write(f"Shoulder Pixel Width: {shoulder_pixel_width:.2f} px")
+                st.write(f"Real Shoulder Width (cm): {real_shoulder_width_cm}")
+                st.write(f"Scale (cm/px): {scale:.4f}")
+                st.write(f"Arm Pixel Length: {arm_pixel_len:.2f} px")
+                st.write(f"Estimated MUAC (cm): {muac_cm:.2f}")
+
         else:
-            st.error("Could not detect shoulders clearly. Try a clearer side image.")
+            st.error("Could not detect both shoulders clearly. Please upload a side or front-facing image with good lighting.")
 
 if __name__ == "__main__":
     muac()
