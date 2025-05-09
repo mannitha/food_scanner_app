@@ -1,5 +1,6 @@
 import streamlit as st
 import gspread
+import json
 import pandas as pd
 from gspread_dataframe import set_with_dataframe, get_as_dataframe
 from datetime import datetime
@@ -9,6 +10,8 @@ from muac_module import run_muac_estimator, classify_muac
 from height_module import run_height_estimator
 
 # --- Google Sheets Setup ---
+creds = json.loads(st.secrets["ac7c47067c8224ed1ee0c906bee57d80b7de8286"])
+gc = gspread.service_account_from_dict(creds)
 gc = gspread.service_account(filename="malnocare-459318-ac7c47067c82.json")
 nutrition_sheet = gc.open("MalnutritionAppData").worksheet("Nutrition")
 food_sheet = gc.open("MalnutritionAppData").worksheet("FoodScans")
