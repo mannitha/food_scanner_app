@@ -166,27 +166,25 @@ def height_step():
 def arm_step():
     st.markdown("### Step 2: Arm Circumference (MUAC) Estimation")
 
-    # Run your custom MUAC detection logic
+    # Run MUAC detection logic
     muac()
 
-    # Optionally, include result handling if needed:
+    # Retrieve result from session state
     arm_val = st.session_state.get("arm_val")
     muac_status = st.session_state.get("muac_status")
 
     if arm_val is not None and muac_status is not None:
         st.success(f"Saved MUAC: {arm_val} cm | Status: {muac_status}")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("⬅️ Back"):
-            st.session_state.page = "height"
-            st.rerun()
-    with col2:
-        if st.button("➡️ Next"):
-            # Save the MUAC value to session_state for the summary step
-            st.session_state.arm_value = arm_val
-            st.session_state.page = "done"
-            st.rerun()
+    # Back button (assumes you have defined this globally)
+    back_button()  # Handles setting st.session_state.page to 'height'
+
+    # Next button
+    if st.button("Next"):
+        st.session_state.arm_value = arm_val  # Ensure value is saved
+        st.session_state.page = "done"
+        st.rerun()
+
 
 
 def done_step():
