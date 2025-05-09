@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 import mediapipe as mp
 
-def muac():
+def run_muac():
         
     # --- Custom CSS ---
     st.markdown("""
@@ -171,4 +171,4 @@ def muac():
             """)
 
 if __name__ == "__main__":
-    muac()
+    run_muac()
