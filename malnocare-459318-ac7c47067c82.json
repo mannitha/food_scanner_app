@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "malnocare-459318",
+  "private_key_id": "ac7c47067c8224ed1ee0c906bee57d80b7de8286",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCpcVU3F7ebzh+Z\nEZt9rC4jb7SoqzI+vsUW6QYaBB/A8SZ7DmhEvmyJFRjmgBk+3YriRSD3Z9mCixbm\n4TuAPzBXQHBumOOwEJjMX6tCJuPDNiT+/8UPBj7K+xnVq5iwroa3lou8TJmJbATm\njmqJ4+6wHVe6d3BjyCqtJnByZwoYO9lAVy6RjEylIgHzN4vRA4J+ueWm1A3l4jDO\nm5RgNw4da7rlb6XRsiWG/CXgvZW/ZThhU1617jOPxhlj0KY1YoOeAlfQ7a248k9m\nCyJ42MsOcJzWBF/+F5Ym0kpHNwU2xl/O/V/wbH/XtJFcMaER3/MiKltZx8x1a8lf\nGPS69lsTAgMBAAECggEAVLFixCpVKooBTju4Sj0lRK4hkUsczrMBBV4NIDTegEyp\nDMobQP0jd/N1IkV2GO+Ya1fdTfx5AmCuXlHHMWekLIB3kjhWWls5XLIXAnY40wq9\nvD2wzD01ZrTS6XOfWvSpPpt/let9tOwqmOknhGvLEvlfr8LiiOV0u15ixzQMniZ/\noz9kAIDsKgEoI7hIeggpqVB27OkxjgsgeqBs7u7Gm9sD45Z4MuyukBuIy3ET2oBd\nwPFwf6wXeXbctNwb5QKF+vLAcydbN5WstWzgb73K9YFjIhzrILzDN9JalmxRDM2/\nxeiFqGbLbh1Bo2ElhNmbI+K9ZZISEAopvdkaZth9oQKBgQDZDDrVpLxOSOmR4kVb\nEHpQ7tCYuNfoEodWddUusbfTB2BRhoxD61D5/vpdaj8leiOv28QX5wyPnahBhe+9\nsM8J7y9+3pREuc1UjtOYiH/S7v2Ws59IySYWH52jRr80LvxKOdS12LKd82mbWe14\nw3yA/rZ/f0AhvPIaD9futHIH4QKBgQDH2f7mApjughDmiOkvntAl/wIpfVOrEs+x\n4vLsNtD+tdRFW7pn9xbHdDf3Gl4jB8MMosdJhOFjobqTYdEZtl+5dRymNGA20CVX\nSJmrQ9hcLA9drpN8h/GHHp5t3DoJBCQv0f8QjEiJ7kJnzVQ+1D4tGc5OtVSuRYvO\nO8S8VJLxcwKBgG/5ITkqvYLdlrIOO52ZSKEMM002vxwYwv1V2N84DA+wlH46nY5E\njggLBPrAX0dkVZjaFbYHGrHUsgLrqB0CZC1J2gTnqzIxcL6Y2IyujtMxPF5M2HXi\nX+W19ctQKkAvpTRd1WDjJHLcKrVclWhh4Y9i2J+59Enzgirz1YBuUw3BAoGBAKPG\nzzAZUtCqgEUcT9R5lmR87X2ougdI/DHwJVlUtsL1qYZJXKJUiDNd13tF/X1BoCNb\nxmtGXRqz791V3PDwVtP52EeQRoTE4MT9twj2KXmnldQU+8Ki+Vjcy8KGJn07Cpix\nxBAAlnWKbpr4VqDCeE2nhz1TNpk2XxLcQiaAPIdnAoGAY+lHKtpRPGDu3Ephsrqe\nlITZUa6tDm3I8+P6uuO+in9Ipn2jnuEGVNMiz3b3Ide5A/+F4oUdk9tQvRXkmlM4\nk9DWC/KtG47+P0JgeTHE5wgJzAp/KkOvK0qPdUBFwpWjawUccGFFJiuvRjgH3Qyz\njFQjz+szwCpl2+D6Wud2oy0=\n-----END PRIVATE KEY-----\n",
+  "client_email": "malnocare@malnocare-459318.iam.gserviceaccount.com",
+  "client_id": "101655846268532504883",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/malnocare%40malnocare-459318.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
