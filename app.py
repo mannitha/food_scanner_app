@@ -65,6 +65,16 @@ def load_users():
 def save_users(users):
     with open(user_data_file, "w") as f:
         json.dump(users, f, indent=4)
+def load_users():
+    try:
+        if os.path.exists(user_data_file):
+            with open(user_data_file, "r") as f:
+                return json.load(f)
+    except json.JSONDecodeError:
+        st.error("User data file is corrupted.")
+        return {}
+    return {}
+
 
 def load_nutrition_data():
     file = get_nutrition_file()
