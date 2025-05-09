@@ -6,7 +6,44 @@ import mediapipe as mp
 
 def muac():
         
+    # --- Custom CSS ---
+    st.markdown("""
+    <style>
+        /* Green upload button */
+        div.stButton > button:first-child {
+            background-color: #69AE43;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
 
+        div.stButton > button:first-child:hover {
+            background-color: #45a049;
+        }
+
+        .nutrition-header {
+            font-size: 18px !important;
+            margin-bottom: 10px !important;
+        }
+
+        /* Extra button styles */
+        .green-button {
+            background-color: #69ae43 !important;
+        }
+
+        .blue-button {
+            background-color: #1889cb !important;
+        }
+
+    </style>
+    """, unsafe_allow_html=True)
 
     # --- Calibration Factors ---
     CALIBRATION_FACTORS = {
@@ -132,6 +169,7 @@ def muac():
             2. The arm is not obstructed by clothing
             3. The photo is taken from a front/side angle with good lighting
             """)
+
 if __name__ == "__main__":
     muac()
 
