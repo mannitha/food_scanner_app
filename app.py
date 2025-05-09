@@ -50,7 +50,9 @@ components.html("""
     <meta name="apple-mobile-web-app-title" content="My App">
 """, height=0)
 
-USER_DATA_FILE = "users.json"
+USER_DATA_FILE = os.path.join(os.path.expanduser("~"), ".malnutrition_app", "users.json")
+os.makedirs(os.path.dirname(USER_DATA_FILE), exist_ok=True)
+
 def get_nutrition_file(): return f"nutrition_data_{st.session_state.username}.json"
 def get_food_file(): return f"food_data_{st.session_state.username}.json"
 def load_users(): return json.load(open(USER_DATA_FILE)) if os.path.exists(USER_DATA_FILE) else {}
@@ -67,6 +69,11 @@ def load_nutrition_data():
 def save_nutrition_data(data): json.dump(data, open(get_nutrition_file(), "w"), indent=2)
 def load_food_data(): return json.load(open(get_food_file())) if os.path.exists(get_food_file()) else []
 def save_food_data(data): json.dump(data, open(get_food_file(), "w"), indent=2)
+def save_users(users):
+    existing = load_users()
+    existing.update(users)
+    with open(USER_DATA_FILE, "w") as f:
+        json.dump(existing, f, indent=2)
 
 # Auth
 def signup():
@@ -88,6 +95,7 @@ def login():
     p = st.text_input("Password", type="password")
     if st.button("Login"):
         users = load_users()
+        st.write("DEBUG USERS:", users)
         if u not in users: st.error("Username doesn't exist.")
         elif users[u]["password"] != p: st.error("Incorrect password.")
         else:
