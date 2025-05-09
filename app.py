@@ -39,7 +39,7 @@ import json, os
 import pandas as pd
 import streamlit.components.v1 as components
 from food_module import run_food_scanner
-from muac_module import muac
+from muac_module import run_muac_estimator
 from height_module import run_height_estimator
 
 # Meta and favicon
