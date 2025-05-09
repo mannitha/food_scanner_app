@@ -167,7 +167,7 @@ def arm_step():
     st.markdown("MUAC Estimation")
 
     # Run MUAC detection logic
-    muac()
+    run_muac_estimator()
 
     # Get values from session state
     arm_val = st.session_state.get("arm_val")
