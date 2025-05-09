@@ -357,6 +357,7 @@ def view_old_food_step():
     if not data:
         st.info("No records")
         return
+    back_button()
     idx = st.selectbox("Select", range(len(data)), format_func=lambda i: f"{data[i]['Name']} - {data[i]['Meal Timing']}")
     entry = data[idx]
     st.table(pd.DataFrame(entry["Nutrition Table"]))
@@ -371,7 +372,6 @@ def view_old_food_step():
             save_food_data(data)
             st.success("Deleted!")
             st.rerun()
-    back_button()
 
 def edit_food_entry_step():
     st.title("📝 Edit Food Entry")
