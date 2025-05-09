@@ -9,3 +9,4 @@ mediapipe
 Pillow
 streamlit-image-coordinates
 streamlit-drawable-canvas
+streamlit-lottie
