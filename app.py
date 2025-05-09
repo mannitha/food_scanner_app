@@ -178,21 +178,34 @@ def arm_step():
     # Display saved values
     arm_val = st.session_state.get("arm_val")
     muac_status = st.session_state.get("muac_status")
-    
+
     if arm_val is not None and muac_status is not None:
         st.markdown(f"**Saved MUAC:** `{arm_val} cm` &nbsp;&nbsp;|&nbsp;&nbsp; **Status:** `{muac_status}`")
 
-    # Navigation buttons
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("⬅️ Back"):
-            st.session_state.page = "height"
-            st.rerun()
-    with col2:
-        if st.button("➡️ Next"):
-            st.session_state["arm_value"] = arm_val  # optionally use a unified name
-            st.session_state.page = "done"
-            st.rerun()
+    # Style buttons using full width and rounded corners
+    st.markdown("""
+        <style>
+            .stButton > button {
+                width: 100%;
+                border-radius: 10px;
+                padding: 0.5em;
+                margin-bottom: 0.5em;
+                font-weight: 500;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Back button
+    if st.button("⬅️ Back"):
+        st.session_state.page = "height"
+        st.rerun()
+
+    # Continue button
+    if st.button("Continue"):
+        st.session_state["arm_value"] = arm_val
+        st.session_state.page = "done"
+        st.rerun()
+
 
 def done_step():
     st.title("✅ Summary")
