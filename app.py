@@ -3,7 +3,7 @@ from datetime import date, datetime
 import json, os
 import pandas as pd
 import streamlit.components.v1 as components
-from foodscan_module import run_food_scanner
+from foodscan_module import food_scanner
 from physical_module import run_physical_attr
 
 
