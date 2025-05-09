@@ -10,5 +10,5 @@ Pillow
 streamlit-image-coordinates
 streamlit-drawable-canvas
 streamlit-lottie
-gspread
+gspread-dataframe
 oauth2client
