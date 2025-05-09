@@ -39,7 +39,7 @@ import json, os
 import pandas as pd
 import streamlit.components.v1 as components
 from food_module import run_food_scanner
-from arm_module import run_muac
+from muac_module import run_muac
 from height_module import run_height_estimator
 
 # Meta and favicon
@@ -164,20 +164,20 @@ def height_step():
             st.session_state.page = "arm"
 
 def arm_step():
-    st.markdown("### MUAC Estimation")
-    result = run_muac()
+    st.markdown("### Step 2: Arm Circumference (MUAC) Estimation")
+    arm_val, muac_status = run_muac()
 
-    if result is not None:
-        if isinstance(result, tuple) and len(result) == 2:
-            arm_val, muac_status = result
-            if arm_val is not None and muac_status is not None:
-                st.session_state.arm_value = arm_val
-                st.session_state.muac_status = muac_status
+    if arm_val is not None:
+        st.session_state["arm_val"] = arm_val
+        st.session_state["muac_status"] = muac_status
+        st.success(f"Saved MUAC: {arm_val} cm | Status: {muac_status}")
 
-    if st.button("← Back to Menu"):
-        st.session_state.page = "main"
-    if st.button("→ Finish"):
-        st.session_state.page = "done"
+# Navigation (for demo, just run arm step)
+if "step" not in st.session_state:
+    st.session_state["step"] = "arm"
+
+if st.session_state["step"] == "arm":
+    arm_step()
 
 
 def done_step():
