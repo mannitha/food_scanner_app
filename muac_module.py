@@ -9,7 +9,6 @@ def muac():
     # --- Custom CSS ---
     st.markdown("""
     <style>
-        /* Green upload button */
         div.stButton > button:first-child {
             background-color: #69AE43;
             color: white;
@@ -32,25 +31,15 @@ def muac():
             font-size: 18px !important;
             margin-bottom: 10px !important;
         }
-
-        /* Extra button styles */
-        .green-button {
-            background-color: #69ae43 !important;
-        }
-
-        .blue-button {
-            background-color: #1889cb !important;
-        }
-
     </style>
     """, unsafe_allow_html=True)
 
     # --- Calibration Factors ---
     CALIBRATION_FACTORS = {
-        '4-6': 0.085,   # Calibration for 4-6 years old
-        '7-9': 0.088,   # Calibration for 7-9 years old
-        '10-12': 0.092, # Calibration for 10-12 years old
-        '13-15': 0.096  # Calibration for 13-15 years old
+        '4-6': 0.085,
+        '7-9': 0.088,
+        '10-12': 0.092,
+        '13-15': 0.096
     }
 
     mp_pose = mp.solutions.pose
@@ -66,13 +55,11 @@ def muac():
                 h, w, _ = image.shape
                 landmarks = results.pose_landmarks.landmark
                 
-                # Get both left and right arm points for better reliability
                 left_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
                 left_elbow = landmarks[mp_pose.PoseLandmark.LEFT_ELBOW]
                 right_shoulder = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER]
                 right_elbow = landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW]
                 
-                # Convert to pixel coordinates
                 left_shoulder_point = (int(left_shoulder.x * w), int(left_shoulder.y * h))
                 left_elbow_point = (int(left_elbow.x * w), int(left_elbow.y * h))
                 right_shoulder_point = (int(right_shoulder.x * w), int(right_shoulder.y * h))
@@ -89,7 +76,6 @@ def muac():
         return annotated
 
     def classify_muac(muac_cm, age_group):
-        # Age-specific MUAC classification thresholds (in cm)
         if age_group in ['4-6', '7-9']:
             if muac_cm < 12.5:
                 return "Acute Malnutrition", "red"
@@ -97,7 +83,7 @@ def muac():
                 return "Risk of Malnutrition", "orange"
             else:
                 return "Normal Nutrition Status", "green"
-        else:  # 10-15 years
+        else:
             if muac_cm < 13.5:
                 return "Acute Malnutrition", "red"
             elif muac_cm < 14.5:
@@ -105,11 +91,17 @@ def muac():
             else:
                 return "Normal Nutrition Status", "green"
 
-    # --- UI Starts Here ---
+    # --- UI ---
     age_group = st.selectbox(
         "Select the child's age group:",
         options=list(CALIBRATION_FACTORS.keys()),
         index=2
+    )
+
+    arm_preference = st.radio(
+        "Choose which arm to measure:",
+        options=["Auto", "Left Arm", "Right Arm"],
+        horizontal=True
     )
 
     upload_button = st.button("Upload Image", use_container_width=True)
@@ -128,48 +120,57 @@ def muac():
         if uploaded_file:
             image = load_image(uploaded_file)
 
-    # --- Estimation and Classification ---
     if image is not None:
         left_shoulder, left_elbow, right_shoulder, right_elbow = detect_arm_keypoints(image)
-        
-        # Use whichever arm is more visible
-        shoulder_point, elbow_point = None, None
-        if left_shoulder and left_elbow:
+
+        # Decision based on user preference
+        shoulder_point, elbow_point, used_arm = None, None, "Unknown"
+
+        if arm_preference == "Left Arm" and left_shoulder and left_elbow:
             shoulder_point, elbow_point = left_shoulder, left_elbow
-        elif right_shoulder and right_elbow:
+            used_arm = "Left Arm"
+        elif arm_preference == "Right Arm" and right_shoulder and right_elbow:
             shoulder_point, elbow_point = right_shoulder, right_elbow
+            used_arm = "Right Arm"
+        elif arm_preference == "Auto":
+            if left_shoulder and left_elbow:
+                shoulder_point, elbow_point = left_shoulder, left_elbow
+                used_arm = "Left Arm"
+            elif right_shoulder and right_elbow:
+                shoulder_point, elbow_point = right_shoulder, right_elbow
+                used_arm = "Right Arm"
 
         if shoulder_point and elbow_point:
             pixel_distance = np.linalg.norm(np.array(shoulder_point) - np.array(elbow_point))
-            annotated_image = draw_arm_landmarks(image, shoulder_point, elbow_point)
-            st.image(annotated_image, caption="Detected Shoulder and Elbow Points", use_column_width=True)
+            st.write(f"Pixel distance: {pixel_distance:.2f}")
 
-            # Get the appropriate calibration factor for the age group
+            annotated_image = draw_arm_landmarks(image, shoulder_point, elbow_point)
+            st.image(annotated_image, caption=f"{used_arm} - Detected Points", use_column_width=True)
+
             cal_factor = CALIBRATION_FACTORS[age_group]
             estimated_muac = cal_factor * pixel_distance
-            
+
             st.success(f"""
-            *Measurement Results:*
+            *Measurement Results ({used_arm}):*
             - Estimated MUAC: {estimated_muac:.2f} cm
             """)
 
             status, color = classify_muac(estimated_muac, age_group)
-            st.markdown(f'<div class="nutrition-header"> Nutrition Status: 'f'<span style="color: {color};">{status}</span></div>',unsafe_allow_html=True)
-    
-            # Add interpretation guidance
+            st.markdown(f'<div class="nutrition-header"> Nutrition Status: '
+                        f'<span style="color: {color};">{status}</span></div>', unsafe_allow_html=True)
+
             st.info("""
             *Interpretation Guide:*
-            - For children 4-9 years: <12.5cm = Acute Malnutrition, 12.5-13.5cm = Risk, >13.5cm = Normal
-            - For children 10-15 years: <13.5cm = Acute Malnutrition, 13.5-14.5cm = Risk, >14.5cm = Normal
+            - 4-9 years: <12.5cm = Acute, 12.5–13.5cm = Risk, >13.5cm = Normal
+            - 10-15 years: <13.5cm = Acute, 13.5–14.5cm = Risk, >14.5cm = Normal
             """)
         else:
             st.error("""
-            Keypoints not detected. Please ensure:
-            1. The child's upper arm is clearly visible from shoulder to elbow
-            2. The arm is not obstructed by clothing
-            3. The photo is taken from a front/side angle with good lighting
+            Could not detect the specified arm. Please ensure:
+            1. Full visibility from shoulder to elbow.
+            2. Minimal clothing obstruction.
+            3. Good lighting and neutral background.
             """)
 
 if __name__ == "__main__":
     muac()
-
