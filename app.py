@@ -235,6 +235,8 @@ def arm_step():
 
 def done_step():
     st.title("✅ Summary")
+
+    # Build entry dictionary
     entry = {
         "Name": st.session_state.child_name,
         "Age": st.session_state.child_age,
@@ -244,19 +246,39 @@ def done_step():
     }
     entry["BMI"] = calculate_bmi(entry["Weight (kg)"], entry["Height (cm)"])
     entry["Malnutrition Status"] = calculate_malnutrition_status(entry["BMI"], entry["Arm Circumference (MUAC, cm)"])
+
+    # Load data and save if not duplicate
     data = load_nutrition_data()
-    if any(d["Name"] == entry["Name"] and d["Age"] == entry["Age"] for d in data): st.warning("Duplicate detected.")
+    if any(d["Name"] == entry["Name"] and d["Age"] == entry["Age"] for d in data):
+        st.warning("Duplicate detected. Entry was not saved.")
     else:
         data.append(entry)
         save_nutrition_data(data)
         st.success("Saved!")
+
+    # Show new entry
+    st.markdown("### 📌 New Entry")
     st.table(pd.DataFrame([entry]))
+
+    # Show file location (for debug)
+    st.info(f"Data saved in: `{get_nutrition_file()}`")
+
+    # Show all saved entries
+    st.markdown("### 📋 All Previous Entries")
+    all_data = load_nutrition_data()
+    if all_data:
+        st.dataframe(pd.DataFrame(all_data), use_container_width=True)
+    else:
+        st.info("No previous entries yet.")
+
+    # Navigation
     back_button()
     col1, col2 = st.columns(2)
     with col1: 
         if st.button("🔒 Logout"): logout()
     with col2: 
         if st.button("🏠 Back to Menu"): st.session_state.page = "nutrition_choices"
+
 
 def view_old_data_step():
     st.title("🗑️ Delete Records")
