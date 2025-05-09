@@ -1,152 +1,50 @@
-import streamlit as st 
+import streamlit as st
 import cv2
-import numpy as np
-from PIL import Image
 import mediapipe as mp
+import numpy as np
 
 def run_muac():
-    # --- Custom CSS ---
-    st.markdown("""
-    <style>
-        div.stButton > button:first-child {
-            background-color: #69AE43;
-            color: white;
-            border: none;
-            padding: 10px 24px;
-            text-align: center;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 8px;
-        }
+    st.write("📸 Upload an image with arm visible for MUAC estimation.")
+    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
-        div.stButton > button:first-child:hover {
-            background-color: #45a049;
-        }
+    if uploaded_file is not None:
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        image = cv2.imdecode(file_bytes, 1)
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        st.image(image_rgb, caption="Uploaded Image", use_column_width=True)
 
-        .nutrition-header {
-            font-size: 18px !important;
-            margin-bottom: 10px !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+        mp_pose = mp.solutions.pose
+        with mp_pose.Pose(static_image_mode=True) as pose:
+            results = pose.process(image_rgb)
+            if not results.pose_landmarks:
+                st.warning("⚠️ No human pose landmarks detected. Please upload a clearer image.")
+                return None, None
 
-    CALIBRATION_FACTORS = {
-        '4-6': 0.085,
-        '7-9': 0.088,
-        '10-12': 0.092,
-        '13-15': 0.096
-    }
+            landmarks = results.pose_landmarks.landmark
 
-    mp_pose = mp.solutions.pose
+            # Left arm keypoints
+            shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
+            elbow = landmarks[mp_pose.PoseLandmark.LEFT_ELBOW]
 
-    def load_image(uploaded_file):
-        img = Image.open(uploaded_file)
-        return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+            # Convert to pixel coords
+            h, w, _ = image.shape
+            shoulder_coords = np.array([shoulder.x * w, shoulder.y * h])
+            elbow_coords = np.array([elbow.x * w, elbow.y * h])
+            arm_length_px = np.linalg.norm(elbow_coords - shoulder_coords)
 
-    def detect_arm_keypoints(image):
-        with mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5) as pose:
-            results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-            if results.pose_landmarks:
-                h, w, _ = image.shape
-                landmarks = results.pose_landmarks.landmark
-                left_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
-                left_elbow = landmarks[mp_pose.PoseLandmark.LEFT_ELBOW]
-                right_shoulder = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER]
-                right_elbow = landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW]
-                return (
-                    (int(left_shoulder.x * w), int(left_shoulder.y * h)),
-                    (int(left_elbow.x * w), int(left_elbow.y * h)),
-                    (int(right_shoulder.x * w), int(right_shoulder.y * h)),
-                    (int(right_elbow.x * w), int(right_elbow.y * h))
-                )
-        return None, None, None, None
+            # Convert pixels to cm using heuristic (this is rough!)
+            pixels_per_cm = 15  # ← You can calibrate this value
+            muac_cm = round(arm_length_px / pixels_per_cm, 2)
 
-    def draw_arm_landmarks(image, shoulder_point, elbow_point):
-        annotated = image.copy()
-        cv2.line(annotated, shoulder_point, elbow_point, (0, 255, 0), 3)
-        cv2.circle(annotated, shoulder_point, 8, (255, 0, 0), -1)
-        cv2.circle(annotated, elbow_point, 8, (0, 0, 255), -1)
-        return annotated
-
-    def classify_muac(muac_cm, age_group):
-        if age_group in ['4-6', '7-9']:
-            if muac_cm < 12.5:
-                return "Acute Malnutrition", "red"
-            elif muac_cm < 13.5:
-                return "Risk of Malnutrition", "orange"
+            # Classify MUAC status
+            if muac_cm < 11.5:
+                status = "Severely Malnourished"
+            elif muac_cm < 12.5:
+                status = "Moderately Malnourished"
             else:
-                return "Normal Nutrition Status", "green"
-        else:
-            if muac_cm < 13.5:
-                return "Acute Malnutrition", "red"
-            elif muac_cm < 14.5:
-                return "Risk of Malnutrition", "orange"
-            else:
-                return "Normal Nutrition Status", "green"
+                status = "Normal"
 
-    # --- UI Starts ---
-    age_group = st.selectbox("Select the child's age group:", list(CALIBRATION_FACTORS.keys()), index=2)
-    upload_button = st.button("Upload Image", use_container_width=True)
+            st.success(f"MUAC: {muac_cm} cm → {status}")
+            return muac_cm, status
 
-    image = None
-    uploaded_file = None
-
-    if "input_mode" not in st.session_state:
-        st.session_state.input_mode = None
-
-    if upload_button:
-        st.session_state.input_mode = "upload"
-
-    if st.session_state.input_mode == "upload":
-        uploaded_file = st.file_uploader("Upload an image of the child's arm", type=["jpg", "jpeg", "png"])
-        if uploaded_file:
-            image = load_image(uploaded_file)
-
-    if image is not None:
-        left_shoulder, left_elbow, right_shoulder, right_elbow = detect_arm_keypoints(image)
-        shoulder_point, elbow_point = None, None
-        if left_shoulder and left_elbow:
-            shoulder_point, elbow_point = left_shoulder, left_elbow
-        elif right_shoulder and right_elbow:
-            shoulder_point, elbow_point = right_shoulder, right_elbow
-
-        if shoulder_point and elbow_point:
-            pixel_distance = np.linalg.norm(np.array(shoulder_point) - np.array(elbow_point))
-            annotated_image = draw_arm_landmarks(image, shoulder_point, elbow_point)
-            st.image(annotated_image, caption="Detected Shoulder and Elbow Points", use_column_width=True)
-
-            cal_factor = CALIBRATION_FACTORS[age_group]
-            estimated_muac = cal_factor * pixel_distance
-
-            st.success(f"""
-            **Measurement Results:**
-            - Estimated MUAC: {estimated_muac:.2f} cm
-            """)
-
-            status, color = classify_muac(estimated_muac, age_group)
-            st.markdown(f'<div class="nutrition-header"> Nutrition Status: '
-                        f'<span style="color: {color};">{status}</span></div>', unsafe_allow_html=True)
-
-            st.info("""
-            **Interpretation Guide:**
-            - For children 4-9 years: <12.5cm = Acute Malnutrition, 12.5-13.5cm = Risk, >13.5cm = Normal
-            - For children 10-15 years: <13.5cm = Acute Malnutrition, 13.5-14.5cm = Risk, >14.5cm = Normal
-            """)
-
-            # ✅ RETURN for use in arm_step()
-            return round(estimated_muac, 2), status
-
-        else:
-            st.error("""
-            Keypoints not detected. Please ensure:
-            1. The child's upper arm is clearly visible from shoulder to elbow
-            2. The arm is not obstructed by clothing
-            3. The photo is taken from a front/side angle with good lighting
-            """)
-
-    return None  # Fallback if no image or points detected
-
-# Optional for testing standalone
-if __name__ == "__main__":
-    run_muac()
+    return None, None
