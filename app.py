@@ -1,4 +1,20 @@
 import streamlit as st
+from streamlit_lottie import st_lottie
+import requests
+import json, os
+import pandas as pd
+import streamlit.components.v1 as components
+from food_module import run_food_scanner
+from arm_module import run_muac
+from height_module import run_height_estimator
+
+# Load Lottie animation from URL
+def load_lottieurl(url: str):
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    return r.json()
+
 st.set_page_config(page_title="Malnutrition App", layout="wide")
 
 # ✅ Mobile-Friendly Styling
@@ -34,13 +50,6 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
-import json, os
-import pandas as pd
-import streamlit.components.v1 as components
-from food_module import run_food_scanner
-from arm_module import run_muac
-from height_module import run_height_estimator
 
 # Meta and favicon
 components.html("""
@@ -84,6 +93,11 @@ def signup():
 
 def login():
     st.title("🔑 Login")
+
+    # Animation
+    login_lottie = load_lottieurl("https://lottie.host/46e8e6ec-08a5-42a0-a53f-e5f998369a61/tEENvAl3W4.json")
+    st_lottie(login_lottie, height=180)
+
     u = st.text_input("Username")
     p = st.text_input("Password", type="password")
     if st.button("Login"):
@@ -128,18 +142,18 @@ def calculate_malnutrition_status(bmi, arm):
 def select_flow_step():
     st.title("📋 Choose Flow")
     col1, col2 = st.columns(2)
-    with col1: 
+    with col1:
         if st.button("👶 Nutrition Detection"): st.session_state.page = "nutrition_choices"
-    with col2: 
+    with col2:
         if st.button("🍽 NutriMann (Food Scanner Only)"): st.session_state.page = "nutrimann_choices"
 
 def nutrition_choices_step():
     st.title("🧒 Nutrition Menu")
     back_button()
     col1, col2 = st.columns(2)
-    with col1: 
+    with col1:
         if st.button("➕ New Entry"): st.session_state.page = "child_info"
-    with col2: 
+    with col2:
         if st.button("🗑️ Delete Records"): st.session_state.page = "view_old_data"
     with st.container():
         if st.button("📊 View Previous Data Summary"): st.session_state.page = "view_data_table"
@@ -147,6 +161,10 @@ def nutrition_choices_step():
 def child_info_step():
     st.title("📋 Child Information")
     back_button()
+
+    info_lottie = load_lottieurl("https://lottie.host/0876a218-548d-4ea4-8ff8-1d11b49a1f7d/mRYOaaA1EY.json")
+    st_lottie(info_lottie, height=200)
+
     st.session_state.child_name = st.text_input("Child's Name")
     st.session_state.child_age = st.number_input("Age", min_value=0)
     st.session_state.child_weight = st.number_input("Weight (kg)", min_value=0.0)
@@ -155,7 +173,8 @@ def child_info_step():
 def height_step():
     st.title("📏 Height Estimator")
     back_button()
-    height_result = run_height_estimator()
+    with st.spinner("Estimating height..."):
+        height_result = run_height_estimator()
     if height_result:
         st.session_state.height_result = height_result
         if st.button("Next"):
@@ -172,6 +191,9 @@ def arm_step():
 def done_step():
     st.title("✅ Summary")
     back_button()
+
+    st.balloons()
+
     entry = {
         "Name": st.session_state.child_name,
         "Age": st.session_state.child_age,
@@ -189,9 +211,9 @@ def done_step():
         st.success("Saved!")
     st.table(pd.DataFrame([entry]))
     col1, col2 = st.columns(2)
-    with col1: 
+    with col1:
         if st.button("🔒 Logout"): logout()
-    with col2: 
+    with col2:
         if st.button("🏠 Back to Menu"): st.session_state.page = "nutrition_choices"
 
 def view_old_data_step():
@@ -202,9 +224,6 @@ def view_old_data_step():
         st.info("No records.")
         return
     df = pd.DataFrame(data)
-    if df.empty:
-        st.info("No records.")
-        return
     for i, row in df.iterrows():
         with st.expander(f"{row['Name']} - Age {row['Age']}"):
             st.write(row)
@@ -221,16 +240,15 @@ def view_data_table_step():
     if not data:
         st.info("No records.")
         return
-    df = pd.DataFrame(data)
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(pd.DataFrame(data), use_container_width=True)
 
 def nutrimann_choices_step():
     st.title("🍴 NutriMann")
     back_button()
     col1, col2 = st.columns(2)
-    with col1: 
+    with col1:
         if st.button("➕ New Food Scan"): st.session_state.page = "nutrimann_info"
-    with col2: 
+    with col2:
         if st.button("📂 View Old Scans"): st.session_state.page = "view_old_food"
 
 def nutrimann_info_step():
@@ -243,7 +261,8 @@ def nutrimann_info_step():
 def food_only_step():
     st.title("📸 Scan Food")
     back_button()
-    run_food_scanner()
+    with st.spinner("Scanning food..."):
+        run_food_scanner()
     if st.button("Show Summary"):
         if "food_result" in st.session_state:
             st.session_state.page = "food_summary"
