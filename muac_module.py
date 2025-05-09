@@ -169,6 +169,6 @@ def muac():
             2. The arm is not obstructed by clothing
             3. The photo is taken from a front/side angle with good lighting
             """)
+if __name__ == "__main__":
+    muac()
 
-if _name_ == "_main_":
-    muac()
