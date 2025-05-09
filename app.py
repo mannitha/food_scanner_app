@@ -164,12 +164,21 @@ def height_step():
             st.session_state.page = "arm"
 
 def arm_step():
-    st.markdown("MUAC Estimation")
-    arm_val, muac_status = run_muac()
-    st.session_state.arm_value = arm_val
-    st.session_state.muac_status = muac_status
-    back_button()
-    if st.button("Finish"): st.session_state.page = "done"
+    st.markdown("### MUAC Estimation")
+    result = run_muac()
+
+    if result is not None:
+        if isinstance(result, tuple) and len(result) == 2:
+            arm_val, muac_status = result
+            if arm_val is not None and muac_status is not None:
+                st.session_state.arm_value = arm_val
+                st.session_state.muac_status = muac_status
+
+    if st.button("← Back to Menu"):
+        st.session_state.page = "main"
+    if st.button("→ Finish"):
+        st.session_state.page = "done"
+
 
 def done_step():
     st.title("✅ Summary")
