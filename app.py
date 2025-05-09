@@ -164,7 +164,7 @@ def height_step():
             st.session_state.page = "arm"
 
 def arm_step():
-    st.markdown("### Step 2: Arm Circumference (MUAC) Estimation")
+    st.markdown("MUAC Estimation")
 
     # Run MUAC detection logic
     muac()
