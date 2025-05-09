@@ -95,7 +95,7 @@ def login():
     p = st.text_input("Password", type="password")
     if st.button("Login"):
         users = load_users()
-        st.write("DEBUG USERS:", users)
+        
         if u not in users: st.error("Username doesn't exist.")
         elif users[u]["password"] != p: st.error("Incorrect password.")
         else:
