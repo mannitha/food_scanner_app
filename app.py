@@ -1,5 +1,7 @@
 import streamlit as st
 st.set_page_config(page_title="Malnutrition App", layout="wide")
+import firebase_admin
+from firebase_admin import credentials, firestore
 
 # ✅ Mobile-Friendly Styling
 st.markdown("""
@@ -51,47 +53,67 @@ components.html("""
     <meta name="apple-mobile-web-app-title" content="My App">
 """, height=0)
 
+if not firebase_admin._apps:
+    cred = credentials.Certificate(st.secrets["firebase"])
+    firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
 user_data_file = os.path.join(os.getcwd(), "users.json")
 
 def get_nutrition_file(): return f"nutrition_data_{st.session_state.username}.json"
 def get_food_file(): return f"food_data_{st.session_state.username}.json"
-def load_users():
-    if os.path.exists(user_data_file):
-        with open(user_data_file, "r") as f:
-            return json.load(f)
-    return {}
 
 # Save users to JSON file
-def save_users(users):
-    with open(user_data_file, "w") as f:
-        json.dump(users, f, indent=4)
+def save_users(user_id, name, age, gender):
+    doc_ref = db.collection("users").document(user_id)
+    doc_ref.set({
+        "name": name,
+        "age": age,
+        "gender": gender
+    })
+    st.success(f"User {name} saved!")
+    
+
 def load_users():
-    try:
-        if os.path.exists(user_data_file):
-            with open(user_data_file, "r") as f:
-                return json.load(f)
-    except json.JSONDecodeError:
-        st.error("User data file is corrupted.")
-        return {}
-    return {}
+    users_ref = db.collection('users')
+    docs = users_ref.stream()
+    users = {}
+    for doc in docs:
+        users[doc.id] = doc.to_dict()
+    return users
+
+def load_nutrition_data_firebase(username):
+    docs = db.collection('users').document(username).collection('nutrition').stream()
+    return [doc.to_dict() for doc in docs]
 
 
-def load_nutrition_data():
-    file = get_nutrition_file()
-    try:
-        data = json.load(open(file)) if os.path.exists(file) else []
-        return data if isinstance(data, list) else []
-    except:
-        return []
+def save_nutrition_data_firebase(entry, username):
+    doc_ref = db.collection('users').document(username).collection('nutrition').document()
+    doc_ref.set(entry)
 
-def save_nutrition_data(data): json.dump(data, open(get_nutrition_file(), "w"), indent=2)
-def load_food_data(): return json.load(open(get_food_file())) if os.path.exists(get_food_file()) else []
-def save_food_data(data): json.dump(data, open(get_food_file(), "w"), indent=2)
-def save_users(users):
-    existing = load_users()
-    existing.update(users)
-    with open(USER_DATA_FILE, "w") as f:
-        json.dump(existing, f, indent=2)
+def save_food_data(user_id, food_name, calories, protein, fat):
+    food_ref = db.collection("users").document(user_id).collection("food_data").document()
+    food_ref.set({
+        "food_name": food_name,
+        "calories": calories,
+        "protein": protein,
+        "fat": fat,
+        "timestamp": firestore.SERVER_TIMESTAMP
+    })
+    st.success(f"Food {food_name} saved!")
+
+def load_food_data(user_id):
+    food_ref = db.collection("users").document(user_id).collection("food_data")
+    docs = food_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).stream()
+
+    food_list = []
+    for doc in docs:
+        food_list.append(doc.to_dict())
+
+    return food_list
+
+
 
 # Auth
 def signup():
