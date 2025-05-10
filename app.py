@@ -57,9 +57,7 @@ user_data_file = os.path.join(os.getcwd(), "users.json")
 
 if not firebase_admin._apps:
    cred = credentials.Certificate(st.secrets["firebase"])
-
-# Initialize the Firebase Admin SDK with the credentials
-    firebase_admin.initialize_app(cred)
+   firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
