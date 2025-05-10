@@ -1,4 +1,5 @@
 streamlit
+firebase-admin
 python-dotenv
 google-generativeai
 requests
@@ -12,4 +13,3 @@ streamlit-drawable-canvas
 streamlit-lottie
 gspread-dataframe
 oauth2client
-firebase-admin
