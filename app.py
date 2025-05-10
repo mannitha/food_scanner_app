@@ -55,13 +55,13 @@ components.html("""
 
 user_data_file = os.path.join(os.getcwd(), "users.json")
 
-st.write(st.secrets["firebase"])
-
-# Initialize Firebase with the credentials from Streamlit secrets
-cred = credentials.Certificate(st.secrets["firebase"])
-
-# Initialize the Firebase Admin SDK with the credentials
-firebase_admin.initialize_app(cred)
+if not firebase_admin._apps:
+    # Parse the credentials string from Streamlit secrets
+    cred_dict = json.loads(st.secrets["firebase"])
+    
+    # Initialize Firebase with the credentials dictionary
+    cred = credentials.Certificate(cred_dict)
+    firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
