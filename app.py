@@ -56,12 +56,15 @@ components.html("""
 user_data_file = os.path.join(os.getcwd(), "users.json")
 
 if not firebase_admin._apps:
-    # Directly use the credentials dictionary from Streamlit secrets
     cred_dict = st.secrets["firebase"]
+    cred_dict["private_key"] = cred_dict["private_key"].replace('\\n', '\n')
     
-    # Initialize Firebase with the credentials dictionary
-    cred = credentials.Certificate(cred_dict)
-    firebase_admin.initialize_app(cred)
+    try:
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
+    except ValueError as e:
+        st.error(f"Firebase initialization failed: {e}")
+        st.stop()  # Prevent the app from running if Firebase fails
 
 db = firestore.client()
 
