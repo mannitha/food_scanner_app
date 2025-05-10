@@ -12,3 +12,4 @@ streamlit-drawable-canvas
 streamlit-lottie
 gspread-dataframe
 oauth2client
+firebase-admin
