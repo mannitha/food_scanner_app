@@ -56,8 +56,8 @@ components.html("""
 user_data_file = os.path.join(os.getcwd(), "users.json")
 
 if not firebase_admin._apps:
-    # Parse the credentials string from Streamlit secrets
-    cred_dict = json.loads(st.secrets["firebase"])
+    # Directly use the credentials dictionary from Streamlit secrets
+    cred_dict = st.secrets["firebase"]
     
     # Initialize Firebase with the credentials dictionary
     cred = credentials.Certificate(cred_dict)
