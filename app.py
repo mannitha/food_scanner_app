@@ -1,8 +1,5 @@
 import streamlit as st
 st.set_page_config(page_title="Malnutrition App", layout="wide")
-import firebase_admin
-from firebase_admin import credentials, firestore
-from tempfile import NamedTemporaryFile
 
 # ✅ Mobile-Friendly Styling
 st.markdown("""
@@ -56,105 +53,45 @@ components.html("""
 
 user_data_file = os.path.join(os.getcwd(), "users.json")
 
-if not firebase_admin._apps:
-        try:
-            # Get secrets
-            firebase_secrets = st.secrets["firebase"]
-            
-            # Create cleaned private key
-            private_key = firebase_secrets["private_key"]
-            
-            # Debug: Print first 50 chars of key (remove after testing)
-            st.write("Private key starts with:", private_key[:50])
-            
-            # Create credentials dictionary
-            cred_dict = {
-                "type": firebase_secrets["type"],
-                "project_id": firebase_secrets["project_id"],
-                "private_key_id": firebase_secrets["private_key_id"],
-                "private_key": private_key,
-                "client_email": firebase_secrets["client_email"],
-                "client_id": firebase_secrets["client_id"],
-                "auth_uri": firebase_secrets["auth_uri"],
-                "token_uri": firebase_secrets["token_uri"],
-                "auth_provider_x509_cert_url": firebase_secrets["auth_provider_x509_cert_url"],
-                "client_x509_cert_url": firebase_secrets["client_x509_cert_url"]
-            }
-            
-            # Write to temporary file
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as temp:
-                json.dump(cred_dict, temp)
-                temp_path = temp.name
-            
-            # Initialize Firebase
-            cred = credentials.Certificate(temp_path)
-            firebase_admin.initialize_app(cred)
-            
-            # Clean up (optional)
-            os.unlink(temp_path)
-            
-            st.success("Firebase initialized successfully!")
-            return True
-            
-        except Exception as e:
-            st.error(f"Firebase initialization failed: {str(e)}")
-            return False
-
-db = firestore.client()
-
 def get_nutrition_file(): return f"nutrition_data_{st.session_state.username}.json"
 def get_food_file(): return f"food_data_{st.session_state.username}.json"
+def load_users():
+    if os.path.exists(user_data_file):
+        with open(user_data_file, "r") as f:
+            return json.load(f)
+    return {}
 
 # Save users to JSON file
-def save_users(user_id, name, age, gender):
-    doc_ref = db.collection("users").document(user_id)
-    doc_ref.set({
-        "name": name,
-        "age": age,
-        "gender": gender
-    })
-    st.success(f"User {name} saved!")
-    
-
+def save_users(users):
+    with open(user_data_file, "w") as f:
+        json.dump(users, f, indent=4)
 def load_users():
-    users_ref = db.collection('users')
-    docs = users_ref.stream()
-    users = {}
-    for doc in docs:
-        users[doc.id] = doc.to_dict()
-    return users
-
-def load_nutrition_data_firebase(username):
-    docs = db.collection('users').document(username).collection('nutrition').stream()
-    return [doc.to_dict() for doc in docs]
+    try:
+        if os.path.exists(user_data_file):
+            with open(user_data_file, "r") as f:
+                return json.load(f)
+    except json.JSONDecodeError:
+        st.error("User data file is corrupted.")
+        return {}
+    return {}
 
 
-def save_nutrition_data_firebase(entry, username):
-    doc_ref = db.collection('users').document(username).collection('nutrition').document()
-    doc_ref.set(entry)
+def load_nutrition_data():
+    file = get_nutrition_file()
+    try:
+        data = json.load(open(file)) if os.path.exists(file) else []
+        return data if isinstance(data, list) else []
+    except:
+        return []
 
-def save_food_data(user_id, food_name, calories, protein, fat):
-    food_ref = db.collection("users").document(user_id).collection("food_data").document()
-    food_ref.set({
-        "food_name": food_name,
-        "calories": calories,
-        "protein": protein,
-        "fat": fat,
-        "timestamp": firestore.SERVER_TIMESTAMP
-    })
-    st.success(f"Food {food_name} saved!")
-
-def load_food_data(user_id):
-    food_ref = db.collection("users").document(user_id).collection("food_data")
-    docs = food_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).stream()
-
-    food_list = []
-    for doc in docs:
-        food_list.append(doc.to_dict())
-
-    return food_list
-
-
+def save_nutrition_data(data): json.dump(data, open(get_nutrition_file(), "w"), indent=2)
+def load_food_data(): return json.load(open(get_food_file())) if os.path.exists(get_food_file()) else []
+def save_food_data(data): json.dump(data, open(get_food_file(), "w"), indent=2)
+def save_users(users):
+    existing = load_users()
+    existing.update(users)
+    with open(USER_DATA_FILE, "w") as f:
+        json.dump(existing, f, indent=2)
 
 # Auth
 def signup():
