@@ -2,6 +2,7 @@ import streamlit as st
 st.set_page_config(page_title="Malnutrition App", layout="wide")
 import firebase_admin
 from firebase_admin import credentials, firestore
+from tempfile import NamedTemporaryFile
 
 # ✅ Mobile-Friendly Styling
 st.markdown("""
@@ -56,15 +57,36 @@ components.html("""
 user_data_file = os.path.join(os.getcwd(), "users.json")
 
 if not firebase_admin._apps:
-    cred_dict = st.secrets["firebase"]
-    cred_dict["private_key"] = cred_dict["private_key"].replace('\\n', '\n')
-    
     try:
-        cred = credentials.Certificate(cred_dict)
-        firebase_admin.initialize_app(cred)
-    except ValueError as e:
-        st.error(f"Firebase initialization failed: {e}")
-        st.stop()  # Prevent the app from running if Firebase fails
+        # Load credentials from Streamlit secrets
+        firebase_secrets = st.secrets["firebase"]
+        
+        # Create a proper credentials dictionary
+        cred_dict = {
+            "type": firebase_secrets["type"],
+            "project_id": firebase_secrets["project_id"],
+            "private_key_id": firebase_secrets["private_key_id"],
+            "private_key": firebase_secrets["private_key"].replace('\\n', '\n'),
+            "client_email": firebase_secrets["client_email"],
+            "client_id": firebase_secrets["client_id"],
+            "auth_uri": firebase_secrets["auth_uri"],
+            "token_uri": firebase_secrets["token_uri"],
+            "auth_provider_x509_cert_url": firebase_secrets["auth_provider_x509_cert_url"],
+            "client_x509_cert_url": firebase_secrets["client_x509_cert_url"]
+        }
+
+        # Create a temporary file (required for Streamlit Cloud)
+        with NamedTemporaryFile(mode='w', suffix='.json') as temp:
+            json.dump(cred_dict, temp)
+            temp.flush()  # Ensure data is written to disk
+            cred = credentials.Certificate(temp.name)
+            firebase_admin.initialize_app(cred)
+            
+        st.success("Firebase initialized successfully!")
+        
+    except Exception as e:
+        st.error(f"Firebase initialization failed: {str(e)}")
+        st.stop()  # Prevent app from running without Firebase
 
 db = firestore.client()
 
