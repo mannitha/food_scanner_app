@@ -1,40 +1,4 @@
 import streamlit as st
-st.set_page_config(page_title="Malnutrition App", layout="wide")
-
-# ✅ Mobile-Friendly Styling
-st.markdown("""
-    <style>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    .main .block-container {
-        padding-top: 1rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-        padding-bottom: 1rem;
-        max-width: 100%;
-    }
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    button[kind="primary"], .stButton > button {
-        width: 100%;
-        margin-top: 0.5rem;
-    }
-    .stTextInput > div > input, .stNumberInput input {
-        font-size: 16px;
-        padding: 0.75rem;
-    }
-    .stSelectbox > div {
-        font-size: 16px;
-    }
-    .stDataFrame, .stTable {
-        overflow-x: auto;
-    }
-    h1 {
-        font-size: 1.8rem;
-        margin-top: 0.5rem;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 import json, os
 import pandas as pd
 from datetime import datetime
@@ -42,6 +6,22 @@ import streamlit.components.v1 as components
 from food_module import run_food_scanner
 from muac_module import run_muac_estimator, classify_muac
 from height_module import run_height_estimator
+
+st.set_page_config(page_title="Malnutrition App", layout="wide")
+
+# Mobile-friendly styling
+st.markdown("""
+    <style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    .main .block-container {padding: 1rem; max-width: 100%;}
+    #MainMenu, footer {visibility: hidden;}
+    button[kind="primary"], .stButton > button {width: 100%; margin-top: 0.5rem;}
+    .stTextInput > div > input, .stNumberInput input {font-size: 16px; padding: 0.75rem;}
+    .stSelectbox > div {font-size: 16px;}
+    .stDataFrame, .stTable {overflow-x: auto;}
+    h1 {font-size: 1.8rem; margin-top: 0.5rem;}
+    </style>
+""", unsafe_allow_html=True)
 
 # Meta and favicon
 components.html("""
@@ -51,20 +31,15 @@ components.html("""
     <meta name="apple-mobile-web-app-title" content="My App">
 """, height=0)
 
+# -------- Paths and Helpers --------
 user_data_file = os.path.join(os.getcwd(), "users.json")
 
-def get_nutrition_file(): return f"nutrition_data_{st.session_state.username}.json"
-def get_food_file(): return f"food_data_{st.session_state.username}.json"
-def load_users():
-    if os.path.exists(user_data_file):
-        with open(user_data_file, "r") as f:
-            return json.load(f)
-    return {}
+def get_nutrition_file():
+    return f"nutrition_data_{st.session_state.username}.json"
 
-# Save users to JSON file
-def save_users(users):
-    with open(user_data_file, "w") as f:
-        json.dump(users, f, indent=4)
+def get_food_file():
+    return f"food_data_{st.session_state.username}.json"
+
 def load_users():
     try:
         if os.path.exists(user_data_file):
@@ -72,9 +47,11 @@ def load_users():
                 return json.load(f)
     except json.JSONDecodeError:
         st.error("User data file is corrupted.")
-        return {}
     return {}
 
+def save_users(users):
+    with open(user_data_file, "w") as f:
+        json.dump(users, f, indent=4)
 
 def load_nutrition_data():
     file = get_nutrition_file()
@@ -84,16 +61,16 @@ def load_nutrition_data():
     except:
         return []
 
-def save_nutrition_data(data): json.dump(data, open(get_nutrition_file(), "w"), indent=2)
-def load_food_data(): return json.load(open(get_food_file())) if os.path.exists(get_food_file()) else []
-def save_food_data(data): json.dump(data, open(get_food_file(), "w"), indent=2)
-def save_users(users):
-    existing = load_users()
-    existing.update(users)
-    with open(USER_DATA_FILE, "w") as f:
-        json.dump(existing, f, indent=2)
+def save_nutrition_data(data):
+    json.dump(data, open(get_nutrition_file(), "w"), indent=2)
 
-# Auth
+def load_food_data():
+    return json.load(open(get_food_file())) if os.path.exists(get_food_file()) else []
+
+def save_food_data(data):
+    json.dump(data, open(get_food_file(), "w"), indent=2)
+
+# -------- Auth --------
 def signup():
     st.title("🔐 Sign Up")
     u = st.text_input("Username")
@@ -101,7 +78,8 @@ def signup():
     e = st.text_input("Email")
     if st.button("Create Account"):
         users = load_users()
-        if u in users: st.error("Username already exists.")
+        if u in users:
+            st.error("Username already exists.")
         else:
             users[u] = {"password": p, "email": e}
             save_users(users)
@@ -113,16 +91,19 @@ def login():
     p = st.text_input("Password", type="password")
     if st.button("Login"):
         users = load_users()
-        
-        if u not in users: st.error("Username doesn't exist.")
-        elif users[u]["password"] != p: st.error("Incorrect password.")
+        if u not in users:
+            st.error("Username doesn't exist.")
+        elif users[u]["password"] != p:
+            st.error("Incorrect password.")
         else:
             st.session_state.logged_in = True
             st.session_state.username = u
             st.session_state.page = "select_flow"
 
-def logout(): st.session_state.clear()
+def logout():
+    st.session_state.clear()
 
+# -------- Navigation & Logic --------
 def back_button():
     if st.button("⬅️ Back"):
         nav = {
@@ -143,32 +124,38 @@ def back_button():
         st.session_state.page = nav.get(st.session_state.page, "select_flow")
         st.rerun()
 
-def calculate_bmi(w, h): return round(w / ((h / 100) ** 2), 2) if w and h else None
+def calculate_bmi(w, h):
+    return round(w / ((h / 100) ** 2), 2) if w and h else None
+
 def calculate_malnutrition_status(bmi, arm):
     if bmi is None or arm is None: return "Unknown"
     if bmi < 13 or arm < 11.5: return "Severe Acute Malnutrition"
     elif bmi < 14 or arm < 12.5: return "Moderate Acute Malnutrition"
     return "Normal"
 
-# Flow pages
+# -------- UI Steps --------
 def select_flow_step():
     st.title("MalnoCare")
     st.write("Scan Track Grow")
     col1, col2 = st.columns(2)
-    with col1: 
-        if st.button("👶 Physical Attributres"): st.session_state.page = "nutrition_choices"
-    with col2: 
-        if st.button("🍽 Food Nutrients Scan"): st.session_state.page = "nutrimann_choices"
+    with col1:
+        if st.button("👶 Physical Attributes"):
+            st.session_state.page = "nutrition_choices"
+    with col2:
+        if st.button("🍽 Food Nutrients Scan"):
+            st.session_state.page = "nutrimann_choices"
 
 def nutrition_choices_step():
     st.title("Child Growth Assessment")
     col1, col2 = st.columns(2)
-    with col1: 
-        if st.button("➕ New Entry"): st.session_state.page = "child_info"
-    with col2: 
-        if st.button("🗑️ Delete Records"): st.session_state.page = "view_old_data"
-    with st.container():
-        if st.button("📊 View Previous Data Summary"): st.session_state.page = "view_data_table"
+    with col1:
+        if st.button("➕ New Entry"):
+            st.session_state.page = "child_info"
+    with col2:
+        if st.button("🗑️ Delete Records"):
+            st.session_state.page = "view_old_data"
+    if st.button("📊 View Previous Data Summary"):
+        st.session_state.page = "view_data_table"
     back_button()
 
 def child_info_step():
@@ -176,67 +163,40 @@ def child_info_step():
     st.session_state.child_name = st.text_input("Child's Name")
     st.session_state.child_age = st.number_input("Age", min_value=0)
     st.session_state.child_weight = st.number_input("Weight (kg)", min_value=0.0)
+    if st.button("Continue"):
+        st.session_state.page = "height"
     back_button()
-    if st.button("Continue"): st.session_state.page = "height"
-    
 
 def height_step():
     st.markdown("Height")
     height_result = run_height_estimator()
     if height_result:
         st.session_state.height_result = height_result
-    back_button()
     if st.button("Next"):
-            st.session_state.page = "arm"
+        st.session_state.page = "arm"
+    back_button()
 
 def arm_step():
     st.markdown("### MUAC Estimation")
-
-    # Run the MUAC estimation logic and capture the result
     muac_value = run_muac_estimator()
-
-    # Store values into session_state if valid
     if muac_value is not None:
         status, _ = classify_muac(muac_value)
         st.session_state["arm_val"] = muac_value
         st.session_state["muac_status"] = status
-
-    # Display saved values
     arm_val = st.session_state.get("arm_val")
     muac_status = st.session_state.get("muac_status")
-
     if arm_val is not None and muac_status is not None:
-        st.markdown(f"**Saved MUAC:** {arm_val} cm &nbsp;&nbsp;|&nbsp;&nbsp; **Status:** {muac_status}")
-
-    # Style buttons using full width and rounded corners
-    st.markdown("""
-        <style>
-            .stButton > button {
-                width: 100%;
-                border-radius: 10px;
-                padding: 0.5em;
-                margin-bottom: 0.5em;
-                font-weight: 500;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # Back button
+        st.markdown(f"**Saved MUAC:** {arm_val} cm | **Status:** {muac_status}")
     if st.button("⬅️ Back"):
         st.session_state.page = "height"
         st.rerun()
-
-    # Continue button
     if st.button("Continue"):
         st.session_state["arm_value"] = arm_val
         st.session_state.page = "done"
         st.rerun()
 
-
 def done_step():
     st.title("✅ Summary")
-
-    # Build entry dictionary
     entry = {
         "Name": st.session_state.child_name,
         "Age": st.session_state.child_age,
@@ -246,8 +206,6 @@ def done_step():
     }
     entry["BMI"] = calculate_bmi(entry["Weight (kg)"], entry["Height (cm)"])
     entry["Malnutrition Status"] = calculate_malnutrition_status(entry["BMI"], entry["Arm Circumference (MUAC, cm)"])
-
-    # Load data and save if not duplicate
     data = load_nutrition_data()
     if any(d["Name"] == entry["Name"] and d["Age"] == entry["Age"] for d in data):
         st.warning("Duplicate detected. Entry was not saved.")
@@ -256,29 +214,18 @@ def done_step():
         save_nutrition_data(data)
         st.success("Saved!")
 
-    # Show new entry
     st.markdown("### 📌 New Entry")
     st.table(pd.DataFrame([entry]))
-
-    # Show file location (for debug)
-    st.info(f"Data saved in: `{get_nutrition_file()}`")
-
-    # Show all saved entries
     st.markdown("### 📋 All Previous Entries")
     all_data = load_nutrition_data()
     if all_data:
         st.dataframe(pd.DataFrame(all_data), use_container_width=True)
     else:
         st.info("No previous entries yet.")
-
-    # Navigation
-    back_button()
     col1, col2 = st.columns(2)
-    with col1: 
-        if st.button("🔒 Logout"): logout()
-    with col2: 
-        if st.button("🏠 Back to Menu"): st.session_state.page = "nutrition_choices"
-
+    with col1: st.button("🔒 Logout", on_click=logout)
+    with col2: st.button("🏠 Back to Menu", on_click=lambda: st.session_state.update(page="nutrition_choices"))
+    back_button()
 
 def view_old_data_step():
     st.title("🗑️ Delete Records")
@@ -287,16 +234,13 @@ def view_old_data_step():
         st.info("No records.")
         return
     df = pd.DataFrame(data)
-    if df.empty:
-        st.info("No records.")
-        return
     for i, row in df.iterrows():
         with st.expander(f"{row['Name']} - Age {row['Age']}"):
             st.write(row)
-            if st.button(f"🗑️ Delete {row['Name']} (Age {row['Age']})", key=f"del_{i}"):
+            if st.button(f"🗑️ Delete {row['Name']}", key=f"del_{i}"):
                 df = df.drop(index=i).reset_index(drop=True)
                 save_nutrition_data(df.to_dict(orient="records"))
-                st.success(f"Deleted entry for {row['Name']}")
+                st.success(f"Deleted {row['Name']}")
                 st.rerun()
     back_button()
 
@@ -306,16 +250,15 @@ def view_data_table_step():
     if not data:
         st.info("No records.")
         return
-    df = pd.DataFrame(data)
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(pd.DataFrame(data), use_container_width=True)
     back_button()
 
 def nutrimann_choices_step():
     st.title("🍴 Food Nutrients Data")
     col1, col2 = st.columns(2)
-    with col1: 
+    with col1:
         if st.button("➕ New Food Scan"): st.session_state.page = "nutrimann_info"
-    with col2: 
+    with col2:
         if st.button("📂 View Old Scans"): st.session_state.page = "view_old_food"
     back_button()
 
@@ -332,7 +275,8 @@ def food_only_step():
     if st.button("Show Summary"):
         if "food_result" in st.session_state:
             st.session_state.page = "food_summary"
-        else: st.error("Please scan the food first.")
+        else:
+            st.error("Please scan the food first.")
     back_button()
 
 def food_summary_step():
@@ -343,13 +287,14 @@ def food_summary_step():
     st.subheader(f"{name} — {time}")
     st.table(result)
     data = load_food_data()
-    back_button()
-    if any(d["Name"] == name and d["Meal Timing"] == time for d in data): st.warning("Duplicate scan exists!")
+    if any(d["Name"] == name and d["Meal Timing"] == time for d in data):
+        st.warning("Duplicate scan exists!")
     else:
         data.append({"Name": name, "Meal Timing": time, "Nutrition Table": result.to_dict()})
         save_food_data(data)
         st.success("Saved!")
     if st.button("🏠 Back to Menu"): st.session_state.page = "nutrimann_choices"
+    back_button()
 
 def view_old_food_step():
     st.title("📂 Old Food Scans")
@@ -357,7 +302,6 @@ def view_old_food_step():
     if not data:
         st.info("No records")
         return
-    back_button()
     idx = st.selectbox("Select", range(len(data)), format_func=lambda i: f"{data[i]['Name']} - {data[i]['Meal Timing']}")
     entry = data[idx]
     st.table(pd.DataFrame(entry["Nutrition Table"]))
@@ -372,6 +316,7 @@ def view_old_food_step():
             save_food_data(data)
             st.success("Deleted!")
             st.rerun()
+    back_button()
 
 def edit_food_entry_step():
     st.title("📝 Edit Food Entry")
@@ -381,8 +326,7 @@ def edit_food_entry_step():
     name = st.text_input("Name", entry["Name"])
     time = st.selectbox("Meal Timing", ["Breakfast", "Lunch", "Dinner", "Snack", "Other"],
                         index=["Breakfast", "Lunch", "Dinner", "Snack", "Other"].index(entry["Meal Timing"]))
-    df = pd.DataFrame(entry["Nutrition Table"])
-    st.table(df)
+    st.table(pd.DataFrame(entry["Nutrition Table"]))
     if st.button("Save Changes"):
         data[idx]["Name"] = name
         data[idx]["Meal Timing"] = time
@@ -391,13 +335,17 @@ def edit_food_entry_step():
         st.session_state.page = "view_old_food"
     back_button()
 
+# -------- Main --------
 def main():
-    if "logged_in" not in st.session_state: st.session_state.logged_in = False
-    if "page" not in st.session_state: st.session_state.page = "login"
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+    if "page" not in st.session_state:
+        st.session_state.page = "login"
     if st.session_state.logged_in:
         st.sidebar.title(f"👤 {st.session_state.username}")
         st.sidebar.button("Logout", on_click=logout)
-        match st.session_state.page:
+        page = st.session_state.page
+        match page:
             case "select_flow": select_flow_step()
             case "nutrition_choices": nutrition_choices_step()
             case "view_old_data": view_old_data_step()
