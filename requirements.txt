@@ -1,6 +1,6 @@
-streamlit>=1.20.0
-supabase>=1.0.0
-pandas>=1.4.0
+streamlit
+supabase
+pandas
 python-dotenv
 google-generativeai
 requests
