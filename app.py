@@ -1,145 +1,91 @@
+# main.py (updated with Supabase)
+
 import streamlit as st
 import pandas as pd
-from supabase import create_client
-import uuid
+from supabase import create_client, Client
 
-# --- Supabase Config ---
+# Supabase config
 SUPABASE_URL = "https://qtpjctlrxoeeqchifyiz.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0cGpjdGxyeG9lZXFjaGlmeWl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc2MzU1MDYsImV4cCI6MjA2MzIxMTUwNn0.jaVyzrfo88VQZoSdHj0yGWtMxJdhRuUX5I_RqO5Y8CU"
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-st.set_page_config(page_title="Malnutrition Detection App", layout="centered")
+def load_users():
+    res = supabase.table("users").select("*").execute()
+    users = {r["username"]: {"password": r["password"], "email": r["email"]} for r in res.data}
+    return users
 
-# --- User Session ---
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-if 'username' not in st.session_state:
-    st.session_state.username = ""
-
-# --- Supabase Functions ---
-def save_nutrition_data(entry):
-    entry["id"] = str(uuid.uuid4())
-    entry["username"] = st.session_state.username
-    supabase.table("nutrition_data").insert(entry).execute()
+def save_users(users):
+    for username, info in users.items():
+        supabase.table("users").insert({
+            "username": username,
+            "password": info["password"],
+            "email": info["email"]
+        }).execute()
 
 def load_nutrition_data():
-    result = supabase.table("nutrition_data").select("*").eq("username", st.session_state.username).execute()
-    return result.data or []
+    res = supabase.table("nutrition_data").select("*").eq("username", st.session_state.username).execute()
+    return res.data
 
-def delete_nutrition_entry(entry_id):
-    supabase.table("nutrition_data").delete().eq("id", entry_id).execute()
-
-def save_food_data_entry(entry):
-    entry["id"] = str(uuid.uuid4())
-    entry["username"] = st.session_state.username
-    entry["nutrition_table"] = entry["nutrition_table"] if isinstance(entry["nutrition_table"], dict) else entry["nutrition_table"].to_dict()
-    supabase.table("food_data").insert(entry).execute()
+def save_nutrition_data(entry):
+    supabase.table("nutrition_data").insert(entry).execute()
 
 def load_food_data():
-    result = supabase.table("food_data").select("*").eq("username", st.session_state.username).execute()
-    return result.data or []
+    res = supabase.table("food_data").select("*").eq("username", st.session_state.username).execute()
+    return res.data
 
-def update_food_data_entry(entry_id, new_data):
-    supabase.table("food_data").update(new_data).eq("id", entry_id).execute()
+def save_food_data(entry):
+    supabase.table("food_data").insert(entry).execute()
 
-def delete_food_entry(entry_id):
-    supabase.table("food_data").delete().eq("id", entry_id).execute()
+def delete_nutrition_entry(username, name, age):
+    supabase.table("nutrition_data").delete().eq("username", username).eq("name", name).eq("age", age).execute()
 
-# --- Login ---
-def login():
-    st.title("Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if username and password:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.success("Logged in successfully!")
-        else:
-            st.error("Please enter both username and password.")
+def update_food_entry(username, old_name, old_time, new_name, new_time):
+    supabase.table("food_data").update({
+        "name": new_name,
+        "meal_timing": new_time
+    }).eq("username", username).eq("name", old_name).eq("meal_timing", old_time).execute()
 
-# --- Nutrition Entry ---
-def done_step():
-    st.title("Child Nutrition Entry")
-    name = st.text_input("Child's Name")
-    age = st.number_input("Age", min_value=0)
-    weight = st.number_input("Weight (kg)", min_value=0.0)
-    height = st.number_input("Height (cm)", min_value=0.0)
-    muac = st.number_input("Arm Circumference (MUAC, cm)", min_value=0.0)
+# The rest of your existing Streamlit UI code remains unchanged
+# Replace each call to the old JSON file functions with the above
 
-    if st.button("Calculate and Save"):
-        if height > 0:
-            bmi = weight / ((height / 100) ** 2)
-        else:
-            bmi = 0
+# In done_step()
+entry = {
+    "Name": name,
+    "Age": age,
+    "Weight (kg)": weight,
+    "Height (cm)": height,
+    "Arm Circumference (MUAC, cm)": muac,
+    "BMI": bmi,
+    "Malnutrition Status": status
+}
+data = load_nutrition_data()
+if any(d["name"] == entry["Name"] and d["age"] == entry["Age"] for d in data):
+    st.warning("Duplicate detected. Entry was not saved.")
+else:
+    entry["username"] = st.session_state.username
+    entry["name"] = entry.pop("Name")
+    entry["age"] = entry.pop("Age")
+    entry["weight"] = entry.pop("Weight (kg)")
+    entry["height"] = entry.pop("Height (cm)")
+    entry["muac"] = entry.pop("Arm Circumference (MUAC, cm)")
+    entry["bmi"] = entry.pop("BMI")
+    entry["status"] = entry.pop("Malnutrition Status")
+    save_nutrition_data(entry)
+    st.success("Saved!")
 
-        status = "Normal"
-        if muac < 11.5:
-            status = "Severe Acute Malnutrition"
-        elif muac < 12.5:
-            status = "Moderate Acute Malnutrition"
+# In food_summary_step()
+if any(d["name"] == name and d["meal_timing"] == time for d in data):
+    st.warning("Duplicate scan exists!")
+else:
+    new_entry = {
+        "username": st.session_state.username,
+        "name": name,
+        "meal_timing": time,
+        "nutrition_table": result.to_dict()
+    }
+    save_food_data(new_entry)
+    st.success("Saved!")
 
-        entry = {
-            "name": name,
-            "age": age,
-            "weight_kg": weight,
-            "height_cm": height,
-            "muac_cm": muac,
-            "bmi": round(bmi, 2),
-            "status": status
-        }
+# Make sure to use the new delete_nutrition_entry and update_food_entry where needed
 
-        data = load_nutrition_data()
-        if any(d["name"] == entry["name"] and d["age"] == entry["age"] for d in data):
-            st.warning("Duplicate detected. Entry was not saved.")
-        else:
-            save_nutrition_data(entry)
-            st.success("Saved!")
-
-# --- Food Scan Summary ---
-def food_summary_step():
-    st.title("Food Scan Entry")
-    name = st.text_input("Child's Name")
-    time = st.selectbox("Meal Time", ["Breakfast", "Lunch", "Dinner", "Snack"])
-
-    # Dummy food scan result
-    result = pd.DataFrame({
-        "Food Item": ["Rice", "Dal"],
-        "Calories": [200, 150],
-        "Protein (g)": [4, 8],
-        "Fat (g)": [0.5, 1]
-    })
-    st.dataframe(result)
-
-    if st.button("Save Scan"):
-        data = load_food_data()
-        if any(d["name"] == name and d["meal_timing"] == time for d in data):
-            st.warning("Duplicate scan exists!")
-        else:
-            save_food_data_entry({
-                "name": name,
-                "meal_timing": time,
-                "nutrition_table": result.to_dict()
-            })
-            st.success("Saved!")
-
-# --- Navigation ---
-def main():
-    if not st.session_state.logged_in:
-        login()
-        return
-
-    st.sidebar.title("Navigation")
-    choice = st.sidebar.radio("Go to", ["Child Nutrition", "Food Scan", "Logout"])
-
-    if choice == "Child Nutrition":
-        done_step()
-    elif choice == "Food Scan":
-        food_summary_step()
-    elif choice == "Logout":
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        st.experimental_rerun()
-
-if __name__ == "__main__":
-    main()
+# Replace `<your-supabase-url>` and `<your-anon-key>` with actual values from your Supabase project.
