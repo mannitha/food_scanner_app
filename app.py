@@ -418,4 +418,4 @@ def main():
         login() if option == "Login" else signup()
 
 if __name__ == "__main__":
-    main()s
+    main()
