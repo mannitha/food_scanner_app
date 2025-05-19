@@ -4,8 +4,8 @@ from supabase import create_client
 import uuid
 
 # --- Supabase Config ---
-SUPABASE_URL = "https://your-project.supabase.co"
-SUPABASE_KEY = "your-anon-key"
+SUPABASE_URL = "https://qtpjctlrxoeeqchifyiz.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0cGpjdGxyeG9lZXFjaGlmeWl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc2MzU1MDYsImV4cCI6MjA2MzIxMTUwNn0.jaVyzrfo88VQZoSdHj0yGWtMxJdhRuUX5I_RqO5Y8CU"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Malnutrition Detection App", layout="centered")
