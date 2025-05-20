@@ -124,7 +124,7 @@ def login():
 def logout(): st.session_state.clear()
 
 def back_button():
-    if st.button(⬅️ Back"):
+    if st.button("⬅️ Back"):
         nav = {
             "nutrition_choices": "select_flow",
             "nutrimann_choices": "select_flow",
