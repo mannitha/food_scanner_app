@@ -147,7 +147,7 @@ def calculate_bmi(w, h): return round(w / ((h / 100) ** 2), 2) if w and h else N
 def calculate_malnutrition_status(bmi, arm):
     if bmi is None or arm is None: return "Unknown"
     if bmi < 13 or arm < 11.5: return "Severe Acute Malnutrition"
-    elif bmi < 14 or arm < 12.5: return "Moderate Acute Malnutrition"
+    elif bmi < 14 or arm < 13.5: return "Moderate Acute Malnutrition"
     elif bmi > 23: return "Obese"
     return "Normal"
 
