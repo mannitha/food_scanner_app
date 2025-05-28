@@ -148,7 +148,7 @@ def calculate_malnutrition_status(bmi, arm):
     if bmi is None or arm is None: return "Unknown"
     if bmi < 13 or arm < 11.5: return "Severe Acute Malnutrition"
     elif bmi < 14 or arm < 12.5: return "Moderate Acute Malnutrition"
-    elif bmi > 18.5: return "Obese"
+    elif bmi > 23: return "Obese"
     return "Normal"
 
 # Flow pages
