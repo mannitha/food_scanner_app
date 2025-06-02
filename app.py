@@ -33,7 +33,7 @@ st.markdown("""
         margin-top: 0.5rem;
     }
     body {
-    background-image: url('https://images.unsplash.com/photo-1606788075763-0e929745cf2b'); /* Change to your preferred image URL */
+    background-image: url('https://github.com/mannitha/food_scanner_app/blob/main/malno.png'); /* Change to your preferred image URL */
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
