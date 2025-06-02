@@ -32,6 +32,19 @@ st.markdown("""
         font-size: 1.8rem;
         margin-top: 0.5rem;
     }
+    body {
+    background-image: url('https://images.unsplash.com/photo-1606788075763-0e929745cf2b'); /* Change to your preferred image URL */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.main {
+    background-color: rgba(255, 255, 255, 0.85); /* Optional: white semi-transparent overlay to maintain readability */
+    padding: 1rem;
+    border-radius: 10px;
+}
     </style>
 """, unsafe_allow_html=True)
 
