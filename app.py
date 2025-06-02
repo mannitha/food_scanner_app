@@ -55,11 +55,6 @@ user_data_file = os.path.join(os.getcwd(), "users.json")
 
 def get_nutrition_file(): return f"nutrition_data_{st.session_state.username}.json"
 def get_food_file(): return f"food_data_{st.session_state.username}.json"
-def load_users():
-    if os.path.exists(user_data_file):
-        with open(user_data_file, "r") as f:
-            return json.load(f)
-    return {}
 
 # Save users to JSON file
 def save_users(users):
@@ -90,7 +85,7 @@ def save_food_data(data): json.dump(data, open(get_food_file(), "w"), indent=2)
 def save_users(users):
     existing = load_users()
     existing.update(users)
-    with open(USER_DATA_FILE, "w") as f:
+    with open(user_data_file, "w") as f:
         json.dump(existing, f, indent=2)
 
 # Auth
