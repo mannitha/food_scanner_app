@@ -305,26 +305,11 @@ def view_data_table_step():
     df = pd.DataFrame(data)
     st.dataframe(df, use_container_width=True)
 
-    # Download as CSV
+    # Add CSV download
     csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label="📥 Download as CSV",
-        data=csv,
-        file_name="nutrition_data.csv",
-        mime="text/csv"
-    )
-
-    # Download as JSON
-    json_data = json.dumps(data, indent=2)
-    st.download_button(
-        label="📥 Download as JSON",
-        data=json_data,
-        file_name="nutrition_data.json",
-        mime="application/json"
-    )
+    st.download_button("⬇️ Download as CSV", data=csv, file_name="nutrition_data.csv", mime="text/csv")
 
     back_button()
-
 
 def nutrimann_choices_step():
     st.title("🍴 Food Nutrients Data")
@@ -374,19 +359,16 @@ def view_old_food_step():
         st.info("No records")
         return
     back_button()
+    
     idx = st.selectbox("Select", range(len(data)), format_func=lambda i: f"{data[i]['Name']} - {data[i]['Meal Timing']}")
     entry = data[idx]
     df = pd.DataFrame(entry["Nutrition Table"])
+    st.subheader(f"{entry['Name']} — {entry['Meal Timing']}")
     st.table(df)
 
-    # Download selected entry
-    json_entry = json.dumps(entry, indent=2)
-    st.download_button(
-        label="📥 Download This Entry (JSON)",
-        data=json_entry,
-        file_name=f"{entry['Name']}_{entry['Meal Timing']}.json",
-        mime="application/json"
-    )
+    # Add download button for selected scan
+    csv = df.to_csv(index=False).encode("utf-8")
+    st.download_button("⬇️ Download Scan as CSV", data=csv, file_name=f"{entry['Name']}_{entry['Meal Timing']}.csv", mime="text/csv")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -400,14 +382,6 @@ def view_old_food_step():
             st.success("Deleted!")
             st.rerun()
 
-    # Download all food scan data
-    all_json = json.dumps(data, indent=2)
-    st.download_button(
-        label="📥 Download All Scans (JSON)",
-        data=all_json,
-        file_name="all_food_scans.json",
-        mime="application/json"
-    )
 
 
 def edit_food_entry_step():
