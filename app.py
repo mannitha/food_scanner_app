@@ -42,7 +42,13 @@ import streamlit.components.v1 as components
 from food_module import run_food_scanner
 from muac_module import run_muac_estimator, classify_muac
 from height_module import run_height_estimator
-
+#1
+from io import BytesIO
+from PIL import Image
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import time
+#1
 # Meta and favicon
 components.html("""
     <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/mannitha/food_scanner_app/main/favicon.png">
@@ -295,9 +301,23 @@ def view_old_data_step():
                 st.success(f"Deleted entry for {row['Name']}")
                 st.rerun()
     back_button()
+#1
+def capture_dataframe_as_image(html: str, height: int = 800, width: int = 1000) -> BytesIO:
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument(f"--window-size={width},{height}")
 
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.get("data:text/html;charset=utf-8," + html)
+    time.sleep(2)  # Let it render
+    png = driver.get_screenshot_as_png()
+    driver.quit()
+    return BytesIO(png)
+    #1
 def view_data_table_step():
-    st.title("📊 Previous Data Summary")
+    st.title("\U0001F4CA Previous Data Summary")
     data = load_nutrition_data()
     if not data:
         st.info("No records.")
@@ -305,12 +325,17 @@ def view_data_table_step():
     df = pd.DataFrame(data)
     st.dataframe(df, use_container_width=True)
 
-    # Add CSV download
+    # CSV download
     csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇️ Download as CSV", data=csv, file_name="nutrition_data.csv", mime="text/csv")
+    st.download_button("\u2B07\uFE0F Download as CSV", data=csv, file_name="nutrition_data.csv", mime="text/csv")
+
+    # HTML and Image Download
+    df_html = df.to_html(index=False)
+    image_data = capture_dataframe_as_image(df_html)
+    st.download_button("\U0001F5BC Download as Image", data=image_data, file_name="nutrition_data.png", mime="image/png")
 
     back_button()
-
+#1
 def nutrimann_choices_step():
     st.title("🍴 Food Nutrients Data")
     col1, col2 = st.columns(2)
@@ -353,33 +378,38 @@ def food_summary_step():
     if st.button("🏠 Back to Menu"): st.session_state.page = "nutrimann_choices"
 
 def view_old_food_step():
-    st.title("📂 Old Food Scans")
+    st.title("\U0001F4C2 Old Food Scans")
     data = load_food_data()
     if not data:
         st.info("No records")
         return
     back_button()
-    
+
     idx = st.selectbox("Select", range(len(data)), format_func=lambda i: f"{data[i]['Name']} - {data[i]['Meal Timing']}")
     entry = data[idx]
     df = pd.DataFrame(entry["Nutrition Table"])
     st.subheader(f"{entry['Name']} — {entry['Meal Timing']}")
     st.table(df)
 
-    # Add download button for selected scan
+    # CSV
     csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇️ Download Scan as CSV", data=csv, file_name=f"{entry['Name']}_{entry['Meal Timing']}.csv", mime="text/csv")
+    st.download_button("\u2B07\uFE0F Download Scan as CSV", data=csv, file_name=f"{entry['Name']}_{entry['Meal Timing']}.csv", mime="text/csv")
+
+    # Image
+    df_html = df.to_html(index=False)
+    image_data = capture_dataframe_as_image(df_html)
+    st.download_button("\U0001F5BC Download Scan as Image", data=image_data, file_name=f"{entry['Name']}_{entry['Meal Timing']}.png", mime="image/png")
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("✏️ Edit"):
+        if st.button("\u270F\uFE0F Edit"):
             st.session_state.edit_index = idx
             st.session_state.page = "edit_food_entry"
     with col2:
-        if st.button("🗑 Delete"):
+        if st.button("\U0001F5D1 Delete"):
             del data[idx]
             save_food_data(data)
-            st.success("Deleted!")
+            st.success("Deleted entry")
             st.rerun()
 
 
